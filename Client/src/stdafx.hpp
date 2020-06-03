@@ -12,4 +12,10 @@
 #include <fstream>
 #include <stdio.h>
 
+#ifdef _WIN64
+#define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
+#else
+#define ProcessEnvironmentBlock = ((PEB*)__readfsqword(0x30))
+#endif
+
 #endif
