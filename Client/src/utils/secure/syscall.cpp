@@ -24,8 +24,7 @@ namespace Utils::Secure {
 		};
 
 		auto SecureVirtualAlloc = [&] (LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) -> LPVOID {
-			NTSTATUS ret = NtAllocateVirtualMemory(GetCurrentProcess(), &lpAddress, 0, &dwSize, flAllocationType, flProtect);
-			if (ret >= 0) {
+			if (NtAllocateVirtualMemory(GetCurrentProcess(), &lpAddress, 0, &dwSize, flAllocationType, flProtect) >= 0) {
 				return lpAddress;
 			}
 
