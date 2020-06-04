@@ -34,7 +34,63 @@ namespace Utils::Secure {
 		return 0;
 	}
 
-	FARPROC GetProcAddress(HMODULE moduleHandle, const char* procName, bool disk) {
+	uintptr_t FindRawAddress(PIMAGE_NT_HEADERS ntHeader, uintptr_t va) {
+		// Since sections contains both a raw address and virtual address field,
+		// we can use it to get the raw address from a virtual address.
+		auto section = IMAGE_FIRST_SECTION(ntHeader);
+		for (int i = 0; i < ntHeader->FileHeader.NumberOfSections; i++) {
+			if (va >= section->VirtualAddress &&
+				va <= (section->VirtualAddress + section->Misc.VirtualSize)) {
+
+				DWORD offset = va - section->VirtualAddress;
+				DWORD rawAddress = section->PointerToRawData + offset;
+
+				return rawAddress;
+			}
+			section++;
+		}
+
+		return 0;
+	}
+
+	template<class T>
+	T FindRawPointer(PIMAGE_NT_HEADERS headers, HMODULE hMod, uintptr_t va) {
+		return (T)((uintptr_t)hMod + FindRawAddress(headers, va));
+	}
+
+	FARPROC GetProcAddressDisk(HMODULE hMod, const char* procName){
+		PIMAGE_NT_HEADERS ntHeader = RVA2VA(PIMAGE_NT_HEADERS, hMod, ((PIMAGE_DOS_HEADER)hMod)->e_lfanew);
+		if (!ntHeader)
+			return nullptr;
+
+		PIMAGE_DATA_DIRECTORY dataDirectory = ntHeader->OptionalHeader.DataDirectory;
+
+		DWORD exportsVA = dataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+		
+		PIMAGE_EXPORT_DIRECTORY pExports = FindRawPointer<PIMAGE_EXPORT_DIRECTORY>(ntHeader, hMod, exportsVA);
+
+		if (pExports) {
+			uint16_t* nameOrdinals = FindRawPointer<uint16_t*>(ntHeader, hMod, pExports->AddressOfNameOrdinals);
+			uint32_t* functions = FindRawPointer<uint32_t*>(ntHeader, hMod, pExports->AddressOfFunctions);
+			uint32_t* names = FindRawPointer<uint32_t*>(ntHeader, hMod, pExports->AddressOfNames);
+
+
+			if (nameOrdinals && functions && names) {
+				for (uint32_t i = 0; i < pExports->NumberOfFunctions; i++) {
+					const char* exportName = FindRawPointer<const char*>(ntHeader, hMod, names[i]);
+					if (exportName && !strcmp(exportName, procName)) {
+						uint32_t offset = functions[nameOrdinals[i]];
+						if (offset) 
+							return FindRawPointer<FARPROC>(ntHeader, hMod, offset);
+						
+					}
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	FARPROC GetProcAddress(HMODULE moduleHandle, const char* procName) {
 		if (moduleHandle) {
 			PIMAGE_NT_HEADERS NtHeader = RVA2VA(PIMAGE_NT_HEADERS, moduleHandle, ((PIMAGE_DOS_HEADER)moduleHandle)->e_lfanew);
 			if (NtHeader) {
@@ -42,29 +98,12 @@ namespace Utils::Secure {
 				if (DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress) {
 					PIMAGE_EXPORT_DIRECTORY Exports = nullptr;
 
-					if (disk) {
-						PIMAGE_SECTION_HEADER SectionHeader = (PIMAGE_SECTION_HEADER)(NtHeader + 1);
-						if (SectionHeader) {
-							DWORD VirtualAddress = DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-							for (int i = 0; i < NtHeader->FileHeader.NumberOfSections; i++) {
-								if (VirtualAddress >= SectionHeader[i].VirtualAddress
-									&& VirtualAddress <= (SectionHeader[i].VirtualAddress + SectionHeader[i].Misc.VirtualSize)) {
-									Exports = RVA2VA(PIMAGE_EXPORT_DIRECTORY, moduleHandle, VirtualAddress - SectionHeader[i].VirtualAddress + SectionHeader[i].PointerToRawData);
-									printf("Exports: %llx\n", Exports);
-									break;
-								}
-							}
-						}
-					} else Exports = RVA2VA(PIMAGE_EXPORT_DIRECTORY, moduleHandle, DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
+					Exports = RVA2VA(PIMAGE_EXPORT_DIRECTORY, moduleHandle, DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
 
 					if (Exports) {
 						uint16_t* NameOridinals = RVA2VA(uint16_t*, moduleHandle, Exports->AddressOfNameOrdinals);
 						uint32_t* Functions = RVA2VA(uint32_t*, moduleHandle, Exports->AddressOfFunctions);
 						uint32_t* Names = RVA2VA(uint32_t*, moduleHandle, Exports->AddressOfNames);
-
-						printf("NameOridinals:%llx\n", NameOridinals);
-						printf("Functions:%llx\n", Functions);
-						printf("Names:%llx\n", Names);
 
 						if (NameOridinals && Functions && Names) {
 							for (uint32_t i = 0; i < Exports->NumberOfFunctions; i++) {

@@ -1,10 +1,11 @@
 #include "stdafx.hpp"
 #include "dynsec/init/init.hpp"
 #include "utils/secure/module.hpp"
-
-__declspec(dllexport) void InitializeClient(void* pDynsecData) {
-    // caller checks here
-    return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::Callbacks*>(pDynsecData));
+extern "C" {
+	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
+		// caller checks here
+		return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::Callbacks*>(pDynsecData));
+	}
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
@@ -20,6 +21,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 int size = ftell(fp);
                 fseek(fp, 0, SEEK_SET);
 
+				printf("Allocating %x bytes...\n", size);
                 auto memory = VirtualAlloc(0, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
                 if (memory) {
                     fread(memory, 1, size, fp);
@@ -30,7 +32,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
                     printf("base: %llx\n", memory);
                     printf("%i microseconds\n", microseconds);
-                    printf("ptr: %llx\n", Utils::Secure::GetProcAddress((HMODULE)memory, "NtQueryVirtualMemory", true));
+					printf("\nExpected value: %p\n", *(uintptr_t*)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtQueryVirtualMemory"));
+                    printf("Value: %p\n\n", *(uintptr_t*)Utils::Secure::GetProcAddressDisk((HMODULE)memory, "NtQueryVirtualMemory"));
 
                     VirtualFree(memory, 0, MEM_RELEASE);
                 }

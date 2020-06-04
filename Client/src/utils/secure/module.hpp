@@ -5,5 +5,6 @@ namespace Utils::Secure {
 #undef GetModuleHandle
 
 	HMODULE GetModuleHandle(const wchar_t* moduleName);
-	FARPROC GetProcAddress(HMODULE moduleHandle, const char* procName, bool disk = false);
+	FARPROC GetProcAddressDisk(HMODULE hMod, const char* procName);
+	FARPROC GetProcAddress(HMODULE moduleHandle, const char* procName);
 }

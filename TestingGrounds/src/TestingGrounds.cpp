@@ -10,7 +10,7 @@ int main() {
     HMODULE Dynsec = LoadLibraryA("Client.dll");
     if (Dynsec) {
         printf("Dynsec client: %llx\n", Dynsec);
-        FARPROC Initialize = GetProcAddress(Dynsec, "?InitializeClient@@YAXPEAX@Z");
+        FARPROC Initialize = GetProcAddress(Dynsec, "InitializeClient");
         if (Initialize) {
             printf("InitializeClient: %llx\n", Initialize);
             Callbacks* Data = new Callbacks();
