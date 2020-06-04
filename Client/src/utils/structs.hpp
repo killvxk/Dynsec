@@ -121,3 +121,11 @@ typedef struct _PEB {
 	LPVOID                       SystemAssemblyStorageMap;
 	LPVOID                       MinimumStackCommit;
 } PEB, * PPEB;
+
+#define PROCESS_INSTRUMENTATION_CALLBACK (PROCESS_INFORMATION_CLASS)0x28
+
+struct PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION {
+	ULONG Version;
+	ULONG Reserved;
+	PVOID Callback;
+};
