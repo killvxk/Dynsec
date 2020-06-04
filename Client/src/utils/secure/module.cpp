@@ -50,7 +50,6 @@ namespace Utils::Secure {
 								if (VirtualAddress >= SectionHeader[i].VirtualAddress
 									&& VirtualAddress <= (SectionHeader[i].VirtualAddress + SectionHeader[i].Misc.VirtualSize)) {
 									Exports = RVA2VA(PIMAGE_EXPORT_DIRECTORY, moduleHandle, VirtualAddress - SectionHeader[i].VirtualAddress + SectionHeader[i].PointerToRawData);
-									printf("Exports: %llx\n", Exports);
 									break;
 								}
 							}
@@ -61,10 +60,6 @@ namespace Utils::Secure {
 						uint16_t* NameOridinals = RVA2VA(uint16_t*, moduleHandle, Exports->AddressOfNameOrdinals);
 						uint32_t* Functions = RVA2VA(uint32_t*, moduleHandle, Exports->AddressOfFunctions);
 						uint32_t* Names = RVA2VA(uint32_t*, moduleHandle, Exports->AddressOfNames);
-
-						printf("NameOridinals:%llx\n", NameOridinals);
-						printf("Functions:%llx\n", Functions);
-						printf("Names:%llx\n", Names);
 
 						if (NameOridinals && Functions && Names) {
 							for (uint32_t i = 0; i < Exports->NumberOfFunctions; i++) {

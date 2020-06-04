@@ -1,6 +1,8 @@
 #include "stdafx.hpp"
 #include "dynsec/init/init.hpp"
 #include "utils/secure/module.hpp"
+#include "utils/secure/syscall.hpp"
+#include "utils/secure/virtual.hpp"
 
 __declspec(dllexport) void InitializeClient(void* pDynsecData) {
     // caller checks here
@@ -9,8 +11,7 @@ __declspec(dllexport) void InitializeClient(void* pDynsecData) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-        auto start = std::chrono::high_resolution_clock::now();
-
+        /*auto start = std::chrono::high_resolution_clock::now();
         char name[MAX_PATH];
         if (GetModuleFileNameA(GetModuleHandleA("ntdll.dll"), name, MAX_PATH)) {
             FILE* fp;
@@ -20,7 +21,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 int size = ftell(fp);
                 fseek(fp, 0, SEEK_SET);
 
-                auto memory = VirtualAlloc(0, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+                auto memory = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
                 if (memory) {
                     fread(memory, 1, size, fp);
                     fclose(fp);
@@ -35,7 +36,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                     VirtualFree(memory, 0, MEM_RELEASE);
                 }
             }
+        }*/
+
+        if (!Utils::Secure::GetSyscalls()->Initialize()) {
+            printf("failed GetSyscalls()->Initialize\n");
+            return FALSE;
         }
+
+        auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        printf("test allocated: %llx\n", alloc);
+        if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
     }
 
     return TRUE;
