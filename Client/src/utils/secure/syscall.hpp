@@ -14,14 +14,20 @@ namespace Utils::Secure {
 		NTSTATUS NtQuerySystemInformation(int SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
 		NTSTATUS NtQueryProcessInformation(HANDLE ProcessHandle, int ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 	private:
-		LPVOID m_NtAllocateVirtualMemoryAddress;
-		LPVOID m_NtFreeVirtualMemoryAddress;
-		LPVOID m_NtProtectVirtualMemoryAddress;
-		LPVOID m_NtQueryVirtualMemoryAddress;
-		LPVOID m_NtQuerySystemInformationAddress;
-		LPVOID m_NtQueryProcessInformationAddress;
+		enum eFunctions {
+			_NtAllocateVirtualMemory,
+			_NtFreeVirtualMemory,
+			_NtProtectVirtualMemory,
+			_NtQueryVirtualMemory,
+			_NtQuerySystemInformation,
+			_NtQueryProcessInformation
+		};
 
-		int GetSyscallIndex(const char* pFunction);
+		LPVOID m_NtdllDisk = nullptr;
+		std::unordered_map<eFunctions, std::pair<LPVOID, int>> m_Functions;
+		std::unordered_map<eFunctions, std::mutex> m_Mutexs;
+
+		int GetSyscallIndex(const char* pFunction, LPVOID pDisk = nullptr);
 	};
 	
 	Syscalls* GetSyscalls();

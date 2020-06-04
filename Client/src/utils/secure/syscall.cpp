@@ -3,15 +3,47 @@
 #include "module.hpp"
 
 namespace Utils::Secure {
+	void EncryptAllocation(uint64_t Address) {
+		if (*(uint8_t*)(Address + 1) != 1) {
+			for (uint8_t i = 0; i < *(uint8_t*)(Address); i++) {
+				*(uint8_t*)(Address + i + 2) ^= 0x69;
+			}
+
+			*(uint8_t*)(Address + 1) = 1;
+		}
+	}
+
+	void DecryptAllocation(uint64_t Address) {
+		if (*(uint8_t*)(Address + 1) == 1) {
+			for (uint8_t i = 0; i < *(uint8_t*)(Address); i++) {
+				*(uint8_t*)(Address + i + 2) ^= 0x69;
+			}
+
+			*(uint8_t*)(Address + 1) = 0;
+		}
+	}
+
+	void SetupAllocation(std::pair<LPVOID, int> lpAddress, const char* SyscallShellcode, uint8_t ShellcodeSize, uint8_t ShellcodeIndexOffset) {
+		uint64_t Address = (uint64_t)lpAddress.first;
+
+		memcpy((void*)(Address + 2), SyscallShellcode, ShellcodeSize);
+		*(int*)(Address + ShellcodeIndexOffset + 2) = lpAddress.second;
+
+		*(uint8_t*)(Address) = ShellcodeSize;
+		EncryptAllocation(Address);
+	}
+
 	bool Syscalls::Initialize() {
+		auto start = std::chrono::high_resolution_clock::now();
+
 #ifdef _WIN64
-		const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
+		static const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
 		uint8_t ShellcodeIndexOffset = 4;
-		SIZE_T ShellcodeSize = 11;
+		uint8_t ShellcodeSize = 11;
 #else
-		const char* SyscallShellcode = "\xB8\x99\x00\x00\x00\xCD\x2E\xC3";
+		static const char* SyscallShellcode = "\xB8\x99\x00\x00\x00\xCD\x2E\xC3";
 		uint8_t ShellcodeIndexOffset = 1;
-		SIZE_T ShellcodeSize = 8;
+		uint8_t ShellcodeSize = 8;
 #endif
 
 		auto CheckAllocation = [this] (LPVOID lpAddress) {
@@ -31,42 +63,70 @@ namespace Utils::Secure {
 			return nullptr;
 		};
 
-		m_NtAllocateVirtualMemoryAddress = VirtualAlloc(0, ShellcodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_NtAllocateVirtualMemoryAddress)) return false;
-		memcpy(m_NtAllocateVirtualMemoryAddress, SyscallShellcode, ShellcodeSize);
-		*(int*)((uint64_t)m_NtAllocateVirtualMemoryAddress + ShellcodeIndexOffset) = GetSyscallIndex("NtAllocateVirtualMemory");
+		char name[MAX_PATH];
+		if (GetModuleFileNameA(Utils::Secure::GetModuleHandle(L"ntdll.dll"), name, MAX_PATH)) {
+			FILE* fp;
+			fopen_s(&fp, name, "rb");
+			if (fp) {
+				fseek(fp, 0, SEEK_END);
+				int size = ftell(fp);
+				fseek(fp, 0, SEEK_SET);
 
-		m_NtFreeVirtualMemoryAddress = SecureVirtualAlloc(0, ShellcodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_NtFreeVirtualMemoryAddress)) return false;
-		memcpy(m_NtFreeVirtualMemoryAddress, SyscallShellcode, ShellcodeSize);
-		*(int*)((uint64_t)m_NtFreeVirtualMemoryAddress + ShellcodeIndexOffset) = GetSyscallIndex("NtFreeVirtualMemory");
+				m_NtdllDisk = VirtualAlloc(0, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+				if (m_NtdllDisk) {
+					fread(m_NtdllDisk, 1, size, fp);
+					fclose(fp);
+				}
+			}
+		}
 
-		m_NtProtectVirtualMemoryAddress = SecureVirtualAlloc(0, ShellcodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_NtProtectVirtualMemoryAddress)) return false;
-		memcpy(m_NtProtectVirtualMemoryAddress, SyscallShellcode, ShellcodeSize);
-		*(int*)((uint64_t)m_NtProtectVirtualMemoryAddress + ShellcodeIndexOffset) = GetSyscallIndex("NtProtectVirtualMemory");
+		m_Functions[_NtAllocateVirtualMemory].second = GetSyscallIndex("NtAllocateVirtualMemory", m_NtdllDisk);
+		m_Functions[_NtFreeVirtualMemory].second = GetSyscallIndex("NtFreeVirtualMemory", m_NtdllDisk);
+		m_Functions[_NtProtectVirtualMemory].second = GetSyscallIndex("NtProtectVirtualMemory", m_NtdllDisk);
+		m_Functions[_NtQueryVirtualMemory].second = GetSyscallIndex("NtQueryVirtualMemory", m_NtdllDisk);
+		m_Functions[_NtQuerySystemInformation].second = GetSyscallIndex("NtQuerySystemInformation", m_NtdllDisk);
+		m_Functions[_NtQueryProcessInformation].second = GetSyscallIndex("NtQueryProcessInformation", m_NtdllDisk);
 
-		m_NtQueryVirtualMemoryAddress = SecureVirtualAlloc(0, ShellcodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_NtQueryVirtualMemoryAddress)) return false;
-		memcpy(m_NtQueryVirtualMemoryAddress, SyscallShellcode, ShellcodeSize);
-		*(int*)((uint64_t)m_NtQueryVirtualMemoryAddress + ShellcodeIndexOffset) = GetSyscallIndex("NtQueryVirtualMemory");
+		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
-		m_NtQuerySystemInformationAddress = SecureVirtualAlloc(0, ShellcodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_NtQuerySystemInformationAddress)) return false;
-		memcpy(m_NtQuerySystemInformationAddress, SyscallShellcode, ShellcodeSize);
-		*(int*)((uint64_t)m_NtQuerySystemInformationAddress + ShellcodeIndexOffset) = GetSyscallIndex("NtQuerySystemInformation");
+		m_Functions[_NtAllocateVirtualMemory].first = VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
+		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_NtQueryProcessInformationAddress = SecureVirtualAlloc(0, ShellcodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_NtQueryProcessInformationAddress)) return false;
-		memcpy(m_NtQueryProcessInformationAddress, SyscallShellcode, ShellcodeSize);
-		*(int*)((uint64_t)m_NtQueryProcessInformationAddress + ShellcodeIndexOffset) = GetSyscallIndex("NtQueryProcessInformation");
+		m_Functions[_NtFreeVirtualMemory].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtFreeVirtualMemory].first)) return false;
+		SetupAllocation(m_Functions[_NtFreeVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
+		m_Functions[_NtProtectVirtualMemory].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtProtectVirtualMemory].first)) return false;
+		SetupAllocation(m_Functions[_NtProtectVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
+		m_Functions[_NtQueryVirtualMemory].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtQueryVirtualMemory].first)) return false;
+		SetupAllocation(m_Functions[_NtQueryVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
+		m_Functions[_NtQuerySystemInformation].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtQuerySystemInformation].first)) return false;
+		SetupAllocation(m_Functions[_NtQuerySystemInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
+		m_Functions[_NtQueryProcessInformation].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtQueryProcessInformation].first)) return false;
+		SetupAllocation(m_Functions[_NtQueryProcessInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		
+		auto elapsed = std::chrono::high_resolution_clock::now() - start;
+		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+		printf("%i microseconds to initialize syscalls\n", microseconds);
+
 		return true;
 	}
 
-	int Syscalls::GetSyscallIndex(const char* pFunction) {
-		// TODO: get from disk instead
-		FARPROC FunctionAddress = Utils::Secure::GetProcAddress(Utils::Secure::GetModuleHandle(L"ntdll.dll"), pFunction);
+	int Syscalls::GetSyscallIndex(const char* pFunction, LPVOID pDisk) {
+		FARPROC FunctionAddress = 0;
+
+		if (pDisk) {
+			FunctionAddress = Utils::Secure::GetProcAddressDisk((HMODULE)pDisk, pFunction);
+		} else FunctionAddress = Utils::Secure::GetProcAddress(Utils::Secure::GetModuleHandle(L"ntdll.dll"), pFunction);
+
 		if (FunctionAddress) {
 			uint64_t Address = (uint64_t)FunctionAddress;
 #ifdef _WIN64
@@ -84,36 +144,93 @@ namespace Utils::Secure {
 	}
 
 	void Syscalls::Clean() {
-		VirtualFree(m_NtAllocateVirtualMemoryAddress, 0, MEM_RELEASE);
-		VirtualFree(m_NtFreeVirtualMemoryAddress, 0, MEM_RELEASE);
-		VirtualFree(m_NtProtectVirtualMemoryAddress, 0, MEM_RELEASE);
-		VirtualFree(m_NtQueryVirtualMemoryAddress, 0, MEM_RELEASE);
-		VirtualFree(m_NtQuerySystemInformationAddress, 0, MEM_RELEASE);
-		VirtualFree(m_NtQueryProcessInformationAddress, 0, MEM_RELEASE);
+		for (auto& it : m_Functions) {
+			VirtualFree(it.second.first, 0, MEM_RELEASE);
+		}
 	}
 
 	NTSTATUS Syscalls::NtAllocateVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect) {
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)m_NtAllocateVirtualMemoryAddress, ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect);
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtAllocateVirtualMemory].lock();
+		uint64_t Address = (uint64_t)m_Functions[_NtAllocateVirtualMemory].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtAllocateVirtualMemory].unlock();
+		return Return;
 	}
 
 	NTSTATUS Syscalls::NtFreeVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG FreeType) {
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)m_NtFreeVirtualMemoryAddress, ProcessHandle, BaseAddress, RegionSize, FreeType);
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtFreeVirtualMemory].lock();
+		uint64_t Address = (uint64_t)m_Functions[_NtFreeVirtualMemory].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, RegionSize, FreeType);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtFreeVirtualMemory].unlock();
+		return Return;
 	}
 
 	NTSTATUS Syscalls::NtProtectVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, PULONG NumberOfBytesToProtect, ULONG NewAccessProtection, PULONG OldAccessProtection) {
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)m_NtProtectVirtualMemoryAddress, ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtProtectVirtualMemory].lock();
+		uint64_t Address = (uint64_t)m_Functions[_NtProtectVirtualMemory].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtProtectVirtualMemory].unlock();
+		return Return;
 	}
 
 	NTSTATUS Syscalls::NtQueryVirtualMemory(HANDLE ProcessHandle, PVOID BaseAddress, int MemoryInformationClass, PVOID MemoryInformation, SIZE_T MemoryInformationLength, PSIZE_T ReturnLength) {
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)m_NtQueryVirtualMemoryAddress, ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtQueryVirtualMemory].lock();
+		uint64_t Address = (uint64_t)m_Functions[_NtQueryVirtualMemory].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtQueryVirtualMemory].unlock();
+		return Return;
 	}
 
 	NTSTATUS Syscalls::NtQuerySystemInformation(int SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength) {
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)m_NtQuerySystemInformationAddress, SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtQuerySystemInformation].lock();
+		uint64_t Address = (uint64_t)m_Functions[_NtQuerySystemInformation].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtQuerySystemInformation].unlock();
+		return Return;
 	}
 
 	NTSTATUS Syscalls::NtQueryProcessInformation(HANDLE ProcessHandle, int ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength) {
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)m_NtQueryProcessInformationAddress, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtQueryProcessInformation].lock();
+		uint64_t Address = (uint64_t)m_Functions[_NtQueryProcessInformation].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtQueryProcessInformation].unlock();
+		return Return;
 	}
 
 	Syscalls* GetSyscalls() {
