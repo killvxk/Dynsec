@@ -11,11 +11,24 @@
 #include <stdlib.h>
 #include <fstream>
 #include <stdio.h>
+#include <intrin.h>
 
 #ifdef _WIN64
 #define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
 #else
-#define ProcessEnvironmentBlock = ((PEB*)__readfsqword(0x30))
+#include "utils/structs.hpp"
+
+inline PEB* GetProcessEnvironmentBlockAsm() {
+	PEB* peb = nullptr;
+	__asm {
+		mov eax, fs: [0x30]
+		mov peb, eax
+	}
+
+	return peb;
+}
+
+#define ProcessEnvironmentBlock GetProcessEnvironmentBlockAsm()
 #endif
 
 #endif
