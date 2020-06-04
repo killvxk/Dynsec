@@ -113,6 +113,7 @@
       <PrecompiledHeaderFile>stdafx.hpp</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -167,8 +168,10 @@
     <ClInclude Include="src\dynsec\types\init_types.hpp" />
     <ClInclude Include="src\stdafx.hpp" />
     <ClInclude Include="src\utils\caller.hpp" />
-    <ClInclude Include="src\utils\module.hpp" />
+    <ClInclude Include="src\utils\secure\virtual.hpp" />
+    <ClInclude Include="src\utils\secure\module.hpp" />
     <ClInclude Include="src\utils\structs.hpp" />
+    <ClInclude Include="src\utils\secure\syscall.hpp" />
     <ClInclude Include="src\utils\va.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -180,7 +183,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\utils\module.cpp" />
+    <ClCompile Include="src\utils\secure\module.cpp" />
+    <ClCompile Include="src\utils\secure\syscall.cpp" />
+    <ClCompile Include="src\utils\secure\virtual.cpp" />
     <ClCompile Include="src\utils\va.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
