@@ -1,13 +1,14 @@
 #include "syscall.hpp"
 #include "utils/caller.hpp"
 #include "module.hpp"
+#include "dynsec/crypto/rc4.hpp"
 
 namespace Utils::Secure {
 	void EncryptAllocation(Syscalls::CryptedAllocItem* Address) {
 		if (!Address->m_Encrypted) {
-			for (uint8_t i = 0; i < Address->m_Size; i++) {
-				Address->m_ShellCode[i] ^= 0x69;
-			}
+			// on the stack for extra poggers
+			uint8_t key[] = { 0x73, 0x75, 0x70, 0x61, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x20, 0x6B, 0x65, 0x79 };
+			Dynsec::Crypto::XeCryptRc4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
 
 			Address->m_Encrypted = true;
 		}
@@ -15,9 +16,9 @@ namespace Utils::Secure {
 
 	void DecryptAllocation(Syscalls::CryptedAllocItem* Address) {
 		if (Address->m_Encrypted) {
-			for (uint8_t i = 0; i < Address->m_Size; i++) {
-				Address->m_ShellCode[i] ^= 0x69;
-			}
+			// on the stack for extra poggers
+			uint8_t key[] = { 0x73, 0x75, 0x70, 0x61, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x20, 0x6B, 0x65, 0x79 };
+			Dynsec::Crypto::XeCryptRc4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
 
 			Address->m_Encrypted = false;
 		}
