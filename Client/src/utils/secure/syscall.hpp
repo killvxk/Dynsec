@@ -4,6 +4,12 @@
 namespace Utils::Secure {
 	class Syscalls {
 	public:
+		struct CryptedAllocItem {
+			uint8_t m_Size;
+			bool m_Encrypted;
+			uint8_t m_ShellCode[1];
+		};
+
 		bool Initialize();
 		void Clean();
 
@@ -24,7 +30,7 @@ namespace Utils::Secure {
 		};
 
 		LPVOID m_NtdllDisk = nullptr;
-		std::unordered_map<eFunctions, std::pair<LPVOID, int>> m_Functions;
+		std::unordered_map<eFunctions, std::pair<CryptedAllocItem*, int>> m_Functions;
 		std::unordered_map<eFunctions, std::mutex> m_Mutexs;
 
 		int GetSyscallIndex(const char* pFunction, LPVOID pDisk = nullptr);

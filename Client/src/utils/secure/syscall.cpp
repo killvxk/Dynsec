@@ -3,33 +3,33 @@
 #include "module.hpp"
 
 namespace Utils::Secure {
-	void EncryptAllocation(uint64_t Address) {
-		if (*(uint8_t*)(Address + 1) != 1) {
-			for (uint8_t i = 0; i < *(uint8_t*)(Address); i++) {
-				*(uint8_t*)(Address + i + 2) ^= 0x69;
+	void EncryptAllocation(Syscalls::CryptedAllocItem* Address) {
+		if (!Address->m_Encrypted) {
+			for (uint8_t i = 0; i < Address->m_Size; i++) {
+				Address->m_ShellCode[i] ^= 0x69;
 			}
 
-			*(uint8_t*)(Address + 1) = 1;
+			Address->m_Encrypted = true;
 		}
 	}
 
-	void DecryptAllocation(uint64_t Address) {
-		if (*(uint8_t*)(Address + 1) == 1) {
-			for (uint8_t i = 0; i < *(uint8_t*)(Address); i++) {
-				*(uint8_t*)(Address + i + 2) ^= 0x69;
+	void DecryptAllocation(Syscalls::CryptedAllocItem* Address) {
+		if (Address->m_Encrypted) {
+			for (uint8_t i = 0; i < Address->m_Size; i++) {
+				Address->m_ShellCode[i] ^= 0x69;
 			}
 
-			*(uint8_t*)(Address + 1) = 0;
+			Address->m_Encrypted = false;
 		}
 	}
 
 	void SetupAllocation(std::pair<LPVOID, int> lpAddress, const char* SyscallShellcode, uint8_t ShellcodeSize, uint8_t ShellcodeIndexOffset) {
-		uint64_t Address = (uint64_t)lpAddress.first;
+		Syscalls::CryptedAllocItem* Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
 
-		memcpy((void*)(Address + 2), SyscallShellcode, ShellcodeSize);
-		*(int*)(Address + ShellcodeIndexOffset + 2) = lpAddress.second;
+		memcpy(&Address->m_ShellCode, SyscallShellcode, ShellcodeSize);
+		*(int*)(&Address->m_ShellCode[ShellcodeIndexOffset]) = lpAddress.second;
 
-		*(uint8_t*)(Address) = ShellcodeSize;
+		Address->m_Size = ShellcodeSize;
 		EncryptAllocation(Address);
 	}
 
@@ -72,7 +72,7 @@ namespace Utils::Secure {
 				int size = ftell(fp);
 				fseek(fp, 0, SEEK_SET);
 
-				m_NtdllDisk = VirtualAlloc(0, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+				m_NtdllDisk = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
 				if (m_NtdllDisk) {
 					fread(m_NtdllDisk, 1, size, fp);
 					fclose(fp);
@@ -89,27 +89,27 @@ namespace Utils::Secure {
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
-		m_Functions[_NtAllocateVirtualMemory].first = VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtFreeVirtualMemory].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtFreeVirtualMemory].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtFreeVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtFreeVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtProtectVirtualMemory].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtProtectVirtualMemory].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtProtectVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtProtectVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQueryVirtualMemory].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQueryVirtualMemory].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtQueryVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQuerySystemInformation].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQuerySystemInformation].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtQuerySystemInformation].first)) return false;
 		SetupAllocation(m_Functions[_NtQuerySystemInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQueryProcessInformation].first = SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQueryProcessInformation].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtQueryProcessInformation].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryProcessInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		
@@ -153,10 +153,10 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtAllocateVirtualMemory].lock();
-		uint64_t Address = (uint64_t)m_Functions[_NtAllocateVirtualMemory].first;
+		CryptedAllocItem* Address = m_Functions[_NtAllocateVirtualMemory].first;
 
 		DecryptAllocation(Address);
-		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect);
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtAllocateVirtualMemory].unlock();
@@ -167,10 +167,10 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtFreeVirtualMemory].lock();
-		uint64_t Address = (uint64_t)m_Functions[_NtFreeVirtualMemory].first;
+		CryptedAllocItem* Address = m_Functions[_NtFreeVirtualMemory].first;
 
 		DecryptAllocation(Address);
-		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, RegionSize, FreeType);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, RegionSize, FreeType);
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtFreeVirtualMemory].unlock();
@@ -181,10 +181,10 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtProtectVirtualMemory].lock();
-		uint64_t Address = (uint64_t)m_Functions[_NtProtectVirtualMemory].first;
+		CryptedAllocItem* Address = m_Functions[_NtProtectVirtualMemory].first;
 
 		DecryptAllocation(Address);
-		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtProtectVirtualMemory].unlock();
@@ -195,10 +195,10 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtQueryVirtualMemory].lock();
-		uint64_t Address = (uint64_t)m_Functions[_NtQueryVirtualMemory].first;
+		CryptedAllocItem* Address = m_Functions[_NtQueryVirtualMemory].first;
 
 		DecryptAllocation(Address);
-		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtQueryVirtualMemory].unlock();
@@ -209,10 +209,10 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtQuerySystemInformation].lock();
-		uint64_t Address = (uint64_t)m_Functions[_NtQuerySystemInformation].first;
+		CryptedAllocItem* Address = m_Functions[_NtQuerySystemInformation].first;
 
 		DecryptAllocation(Address);
-		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtQuerySystemInformation].unlock();
@@ -223,10 +223,10 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtQueryProcessInformation].lock();
-		uint64_t Address = (uint64_t)m_Functions[_NtQueryProcessInformation].first;
+		CryptedAllocItem* Address = m_Functions[_NtQueryProcessInformation].first;
 
 		DecryptAllocation(Address);
-		Return = Utils::Caller::Call<NTSTATUS>(Address + 2, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtQueryProcessInformation].unlock();
