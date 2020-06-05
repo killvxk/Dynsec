@@ -168,6 +168,7 @@
     <ClInclude Include="src\dynsec\crypto\rc4.hpp" />
     <ClInclude Include="src\dynsec\init\init.hpp" />
     <ClInclude Include="src\dynsec\types\init_types.hpp" />
+    <ClInclude Include="src\dynsec\types\packet_types.hpp" />
     <ClInclude Include="src\stdafx.hpp" />
     <ClInclude Include="src\utils\caller.hpp" />
     <ClInclude Include="src\utils\secure\virtual.hpp" />
