@@ -5,8 +5,6 @@
 #include "utils/secure/virtual.hpp"
 #include "utils/structs.hpp"
 
-#include <iostream>
-
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
 		// caller checks here
@@ -32,9 +30,8 @@ void SetupInstrumentationCallback() {
 
 	PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION cb = { 0, 0, hook_wrapper };
 	// Change Version to 1 for x32
-	/*Use secure syscall stuff for GetCurrentProcess?*/
-	auto memory = VirtualAlloc(0, 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-	Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
+	// handle -1 == current process
+	Utils::Secure::GetSyscalls()->NtSetInformationProcess((HANDLE)-1, PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
 	
 }
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
@@ -43,7 +40,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             printf("failed GetSyscalls()->Initialize\n");
             return FALSE;
         }
+
 		SetupInstrumentationCallback();
+
         auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         printf("test allocated: %llx\n", alloc);
         if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
