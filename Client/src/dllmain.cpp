@@ -3,6 +3,9 @@
 #include "utils/secure/module.hpp"
 #include "utils/secure/syscall.hpp"
 #include "utils/secure/virtual.hpp"
+#include "utils/structs.hpp"
+
+#include <iostream>
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -11,13 +14,36 @@ extern "C" {
 	}
 }
 
+extern "C" void __fastcall hook_wrapper(VOID);
+bool g_isProcessingSyscall = false;
+extern "C" void __fastcall hook_routine(uintptr_t rcx/*return addr*/, uintptr_t rdx/*return result*/) {
+	// We want to avoid having a recursion issue if we call other system functions in here
+	if (g_isProcessingSyscall) 
+		return;
+
+	g_isProcessingSyscall = 1;
+	{
+		printf("Syscall returning to %p with result %08x\n", rcx, rdx);
+	}
+	g_isProcessingSyscall = 0;
+}
+
+void SetupInstrumentationCallback() {
+
+	PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION cb = { 0, 0, hook_wrapper };
+	// Change Version to 1 for x32
+	/*Use secure syscall stuff for GetCurrentProcess?*/
+	auto memory = VirtualAlloc(0, 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
+	
+}
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
         if (!Utils::Secure::GetSyscalls()->Initialize()) {
             printf("failed GetSyscalls()->Initialize\n");
             return FALSE;
         }
-
+		SetupInstrumentationCallback();
         auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         printf("test allocated: %llx\n", alloc);
         if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
