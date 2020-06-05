@@ -7,7 +7,7 @@ namespace Dynsec::Crypto {
 		uint8_t j;
 	};
 
-	void RC4(uint8_t* pbKey, uint32_t cbKey, uint8_t* pbInpOut, uint32_t cbInpOut) {
+	void RC4(uint8_t* pbKey, uint32_t cbKey, uint8_t* pbInpOut, uint32_t cbInpOut, uint32_t Offset) {
 		RC4State Rc4State;
 
 		for (DWORD i = 0; i < 256; ++i) {
@@ -30,7 +30,7 @@ namespace Dynsec::Crypto {
 		int i = Rc4State.i;
 		j = Rc4State.j;
 
-		for (DWORD n = 0; n < cbInpOut; ++n) {
+		for (DWORD n = Offset; n < cbInpOut; ++n) {
 			j = (((i + 1) % 256) + Rc4State.S[i]) % 256;
 
 			BYTE bTemp = Rc4State.S[i];
