@@ -4,6 +4,7 @@
 #include "utils/secure/syscall.hpp"
 #include "utils/secure/virtual.hpp"
 #include "utils/structs.hpp"
+#include "dynsec/network/network_socket.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -12,6 +13,7 @@ extern "C" {
 	}
 }
 
+#pragma region Temporary
 extern "C" void __fastcall hook_wrapper(VOID);
 bool g_isProcessingSyscall = false;
 extern "C" void __fastcall hook_routine(uintptr_t rcx/*return addr*/, uintptr_t rdx/*return result*/) {
@@ -27,13 +29,13 @@ extern "C" void __fastcall hook_routine(uintptr_t rcx/*return addr*/, uintptr_t 
 }
 
 void SetupInstrumentationCallback() {
-
 	PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION cb = { 0, 0, hook_wrapper };
 	// Change Version to 1 for x32
 	// handle -1 == current process
 	Utils::Secure::GetSyscalls()->NtSetInformationProcess((HANDLE)-1, PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
-	
 }
+#pragma endregion
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
         if (!Utils::Secure::GetSyscalls()->Initialize()) {

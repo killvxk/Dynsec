@@ -39,6 +39,9 @@
     <ClCompile Include="src\dynsec\crypto\rc4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\dynsec\network\network_socket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\stdafx.hpp">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\dynsec\types\packet_types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dynsec\network\network_socket.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

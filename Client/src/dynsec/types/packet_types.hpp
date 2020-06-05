@@ -2,6 +2,15 @@
 #include "stdafx.hpp"
 
 namespace Dynsec::PacketTypes {
+	struct GameServer {
+		uint32_t m_IP;
+		uint16_t m_Port;
+
+		GameServer(uint32_t ip, uint16_t port)
+			: m_IP(ip), m_Port(port)
+		{}
+	};
+
 	namespace Request {
 		struct EncryptionKeys {
 			// ...
