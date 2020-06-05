@@ -13,6 +13,9 @@
 #include <stdio.h>
 #include <intrin.h>
 
+#define EncodePtr Utils::Secure::GetPointers()->EncodePointer
+#define DecodePtr Utils::Secure::GetPointers()->DecodePointer
+
 #ifdef _WIN64
 #define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
 #else

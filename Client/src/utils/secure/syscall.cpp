@@ -2,6 +2,7 @@
 #include "utils/caller.hpp"
 #include "module.hpp"
 #include "dynsec/crypto/rc4.hpp"
+#include "utils/secure/pointers.hpp"
 
 namespace Utils::Secure {
 	void EncryptAllocation(Syscalls::CryptedAllocItem* Address) {
@@ -24,8 +25,12 @@ namespace Utils::Secure {
 		}
 	}
 
-	void SetupAllocation(std::pair<LPVOID, int> lpAddress, const char* SyscallShellcode, uint8_t ShellcodeSize, uint8_t ShellcodeIndexOffset) {
-		Syscalls::CryptedAllocItem* Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
+	void SetupAllocation(std::pair<LPVOID, int> lpAddress, const char* SyscallShellcode, uint8_t ShellcodeSize, uint8_t ShellcodeIndexOffset, bool Encoded = true) {
+		Syscalls::CryptedAllocItem* Address = nullptr;
+
+		if (Encoded) {
+			Address = (Syscalls::CryptedAllocItem*)DecodePtr(lpAddress.first);
+		} else Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
 
 		memcpy(&Address->m_ShellCode, SyscallShellcode, ShellcodeSize);
 		*(int*)(&Address->m_ShellCode[ShellcodeIndexOffset]) = lpAddress.second;
@@ -86,43 +91,47 @@ namespace Utils::Secure {
 		m_Functions[_NtProtectVirtualMemory].second = GetSyscallIndex("NtProtectVirtualMemory", m_NtdllDisk);
 		m_Functions[_NtQueryVirtualMemory].second = GetSyscallIndex("NtQueryVirtualMemory", m_NtdllDisk);
 		m_Functions[_NtQuerySystemInformation].second = GetSyscallIndex("NtQuerySystemInformation", m_NtdllDisk);
-		m_Functions[_NtQueryProcessInformation].second = GetSyscallIndex("NtQueryProcessInformation", m_NtdllDisk);
+		m_Functions[_NtQueryInformationProcess].second = GetSyscallIndex("NtQueryInformationProcess", m_NtdllDisk);
 		m_Functions[_NtSetInformationProcess].second = GetSyscallIndex("NtSetInformationProcess", m_NtdllDisk);
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
 		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
-		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
 
-		m_Functions[_NtFreeVirtualMemory].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQueryInformationProcess].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtQueryInformationProcess].first)) return false;
+		SetupAllocation(m_Functions[_NtQueryInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
+
+		// encrypt the two ptrs not encrypted
+		m_Functions[_NtQueryInformationProcess].first = (CryptedAllocItem*)EncodePtr(m_Functions[_NtQueryInformationProcess].first);
+		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)EncodePtr(m_Functions[_NtAllocateVirtualMemory].first);
+
+		// now that the above syscall is resolved, we can use the secure ptrs
+		m_Functions[_NtFreeVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtFreeVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtFreeVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtProtectVirtualMemory].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtProtectVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtProtectVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtProtectVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQueryVirtualMemory].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQueryVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtQueryVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQuerySystemInformation].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQuerySystemInformation].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtQuerySystemInformation].first)) return false;
 		SetupAllocation(m_Functions[_NtQuerySystemInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQueryProcessInformation].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (!CheckAllocation(m_Functions[_NtQueryProcessInformation].first)) return false;
-		SetupAllocation(m_Functions[_NtQueryProcessInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
-
-		m_Functions[_NtSetInformationProcess].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtSetInformationProcess].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtSetInformationProcess].first)) return false;
 		SetupAllocation(m_Functions[_NtSetInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 		printf("%i microseconds to initialize syscalls\n", microseconds);
-
 		return true;
 	}
 
@@ -159,7 +168,7 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtAllocateVirtualMemory].lock();
-		CryptedAllocItem* Address = m_Functions[_NtAllocateVirtualMemory].first;
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtAllocateVirtualMemory].first);
 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect);
@@ -173,7 +182,7 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtFreeVirtualMemory].lock();
-		CryptedAllocItem* Address = m_Functions[_NtFreeVirtualMemory].first;
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtFreeVirtualMemory].first);
 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, RegionSize, FreeType);
@@ -187,7 +196,7 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtProtectVirtualMemory].lock();
-		CryptedAllocItem* Address = m_Functions[_NtProtectVirtualMemory].first;
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtProtectVirtualMemory].first);
 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
@@ -201,7 +210,7 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtQueryVirtualMemory].lock();
-		CryptedAllocItem* Address = m_Functions[_NtQueryVirtualMemory].first;
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtQueryVirtualMemory].first);
 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
@@ -215,7 +224,7 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtQuerySystemInformation].lock();
-		CryptedAllocItem* Address = m_Functions[_NtQuerySystemInformation].first;
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtQuerySystemInformation].first);
 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
@@ -225,17 +234,26 @@ namespace Utils::Secure {
 		return Return;
 	}
 
-	NTSTATUS Syscalls::NtQueryProcessInformation(HANDLE ProcessHandle, int ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength) {
+	NTSTATUS Syscalls::NtQueryInformationProcess(HANDLE ProcessHandle, int ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength) {
+		static bool FirstCall = true;
+
 		NTSTATUS Return = 0;
 
-		m_Mutexs[_NtQueryProcessInformation].lock();
-		CryptedAllocItem* Address = m_Functions[_NtQueryProcessInformation].first;
+		m_Mutexs[_NtQueryInformationProcess].lock();
+		CryptedAllocItem* Address = nullptr;
 
+		if (FirstCall) {
+			FirstCall = false;
+			Address = (CryptedAllocItem*)m_Functions[_NtQueryInformationProcess].first;
+		} else {
+			Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtQueryInformationProcess].first);
+		}
+		 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
 		EncryptAllocation(Address);
 
-		m_Mutexs[_NtQueryProcessInformation].unlock();
+		m_Mutexs[_NtQueryInformationProcess].unlock();
 		return Return;
 	}
 
@@ -244,7 +262,7 @@ namespace Utils::Secure {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtSetInformationProcess].lock();
-		CryptedAllocItem* Address = m_Functions[_NtSetInformationProcess].first;
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtSetInformationProcess].first);
 
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength);
@@ -255,7 +273,7 @@ namespace Utils::Secure {
 	}
 
 	Syscalls* GetSyscalls() {
-		static Syscalls instance;
-		return &instance;
+		static Syscalls Instance;
+		return &Instance;
 	}
 }

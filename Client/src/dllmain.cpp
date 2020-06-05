@@ -5,6 +5,7 @@
 #include "utils/secure/virtual.hpp"
 #include "utils/structs.hpp"
 #include "dynsec/network/network_socket.hpp"
+#include "utils/secure/pointers.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -42,6 +43,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             printf("failed GetSyscalls()->Initialize\n");
             return FALSE;
         }
+
+		uint64_t* value = new uint64_t;
+		*value = 123;
+		printf("ptr: %llx\n", (uint64_t)value);
+
+		uint64_t encoded = (uint64_t)EncodePtr(value);
+		printf("encoded: %llx\n", encoded);
+		printf("decoded: %llx\n", (uint64_t)DecodePtr((void*)encoded));
+
+		delete value;
 
 		SetupInstrumentationCallback();
 
