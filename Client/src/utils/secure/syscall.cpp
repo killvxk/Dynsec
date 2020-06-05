@@ -6,9 +6,9 @@
 namespace Utils::Secure {
 	void EncryptAllocation(Syscalls::CryptedAllocItem* Address) {
 		if (!Address->m_Encrypted) {
-			// on the stack for extra poggers
+			// on the stack for extra poggers - "supa secret key"
 			uint8_t key[] = { 0x73, 0x75, 0x70, 0x61, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x20, 0x6B, 0x65, 0x79 };
-			Dynsec::Crypto::XeCryptRc4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
+			Dynsec::Crypto::RC4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
 
 			Address->m_Encrypted = true;
 		}
@@ -16,9 +16,9 @@ namespace Utils::Secure {
 
 	void DecryptAllocation(Syscalls::CryptedAllocItem* Address) {
 		if (Address->m_Encrypted) {
-			// on the stack for extra poggers
+			// on the stack for extra poggers - "supa secret key"
 			uint8_t key[] = { 0x73, 0x75, 0x70, 0x61, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x20, 0x6B, 0x65, 0x79 };
-			Dynsec::Crypto::XeCryptRc4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
+			Dynsec::Crypto::RC4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
 
 			Address->m_Encrypted = false;
 		}
@@ -38,11 +38,11 @@ namespace Utils::Secure {
 		auto start = std::chrono::high_resolution_clock::now();
 
 #ifdef _WIN64
-		static const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
+		const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
 		uint8_t ShellcodeIndexOffset = 4;
 		uint8_t ShellcodeSize = 11;
 #else
-		static const char* SyscallShellcode = "\xB8\x99\x00\x00\x00\xCD\x2E\xC3";
+		const char* SyscallShellcode = "\xB8\x99\x00\x00\x00\xCD\x2E\xC3";
 		uint8_t ShellcodeIndexOffset = 1;
 		uint8_t ShellcodeSize = 8;
 #endif
