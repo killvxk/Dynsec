@@ -87,6 +87,7 @@ namespace Utils::Secure {
 		m_Functions[_NtQueryVirtualMemory].second = GetSyscallIndex("NtQueryVirtualMemory", m_NtdllDisk);
 		m_Functions[_NtQuerySystemInformation].second = GetSyscallIndex("NtQuerySystemInformation", m_NtdllDisk);
 		m_Functions[_NtQueryProcessInformation].second = GetSyscallIndex("NtQueryProcessInformation", m_NtdllDisk);
+		m_Functions[_NtSetInformationProcess].second = GetSyscallIndex("NtSetInformationProcess", m_NtdllDisk);
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
@@ -113,6 +114,10 @@ namespace Utils::Secure {
 		m_Functions[_NtQueryProcessInformation].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtQueryProcessInformation].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryProcessInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
+		m_Functions[_NtSetInformationProcess].first = (CryptedAllocItem*)SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		if (!CheckAllocation(m_Functions[_NtSetInformationProcess].first)) return false;
+		SetupAllocation(m_Functions[_NtSetInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
@@ -231,6 +236,21 @@ namespace Utils::Secure {
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtQueryProcessInformation].unlock();
+		return Return;
+	}
+
+	NTSTATUS Syscalls::NtSetInformationProcess(HANDLE ProcessHandle, PROCESS_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength)
+	{
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtSetInformationProcess].lock();
+		CryptedAllocItem* Address = m_Functions[_NtSetInformationProcess].first;
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtSetInformationProcess].unlock();
 		return Return;
 	}
 

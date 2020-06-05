@@ -19,6 +19,7 @@ namespace Utils::Secure {
 		NTSTATUS NtQueryVirtualMemory(HANDLE ProcessHandle, PVOID BaseAddress, int MemoryInformationClass, PVOID MemoryInformation, SIZE_T MemoryInformationLength, PSIZE_T ReturnLength);
 		NTSTATUS NtQuerySystemInformation(int SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
 		NTSTATUS NtQueryProcessInformation(HANDLE ProcessHandle, int ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+		NTSTATUS NtSetInformationProcess(HANDLE ProcessHandle, PROCESS_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength);
 	private:
 		enum eFunctions {
 			_NtAllocateVirtualMemory,
@@ -26,7 +27,8 @@ namespace Utils::Secure {
 			_NtProtectVirtualMemory,
 			_NtQueryVirtualMemory,
 			_NtQuerySystemInformation,
-			_NtQueryProcessInformation
+			_NtQueryProcessInformation,
+			_NtSetInformationProcess
 		};
 
 		LPVOID m_NtdllDisk = nullptr;
