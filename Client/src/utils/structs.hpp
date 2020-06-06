@@ -38,13 +38,12 @@ typedef struct _LDR_DATA_TABLE_ENTRY {
 	UNICODE_STRING FullDllName;
 	UNICODE_STRING BaseDllName;
 } LDR_DATA_TABLE_ENTRY, * PLDR_DATA_TABLE_ENTRY;
-
 typedef struct _PEB {
 	BYTE                         InheritedAddressSpace;
 	BYTE                         ReadImageFileExecOptions;
 	BYTE                         BeingDebugged;
-	BYTE                         _SYSTEM_DEPENDENT_01;
 
+	BYTE                         _SYSTEM_DEPENDENT_01;
 	LPVOID                       Mutant;
 	LPVOID                       ImageBaseAddress;
 

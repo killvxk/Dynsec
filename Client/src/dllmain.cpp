@@ -6,6 +6,7 @@
 #include "utils/structs.hpp"
 #include "dynsec/network/network_socket.hpp"
 #include "utils/secure/pointers.hpp"
+#include "dynsec/shellcode/shellcode.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -54,11 +55,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 		delete value;
 
-		SetupInstrumentationCallback();
-
         auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         printf("test allocated: %llx\n", alloc);
         if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
+
+		printf("Heap: %llx\n", ProcessEnvironmentBlock->ProcessHeap);
+
+		Dynsec::Shellcode::GetShellcode()->Execute(nullptr);
+
+		// SetupInstrumentationCallback();
     } else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
         Utils::Secure::GetSyscalls()->Clean();
     }
