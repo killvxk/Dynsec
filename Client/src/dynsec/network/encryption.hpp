@@ -4,4 +4,5 @@
 
 namespace Dynsec::Network {
 	void EncryptPacket(Dynsec::PacketTypes::Request::NetworkBaseHeader* Header);
+
 }

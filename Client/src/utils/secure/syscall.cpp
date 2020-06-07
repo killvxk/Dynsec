@@ -1,7 +1,7 @@
 #include "syscall.hpp"
 #include "utils/caller.hpp"
 #include "module.hpp"
-#include "dynsec/crypto/rc4.hpp"
+#include "dynsec/crypto/crypto.hpp"
 #include "utils/secure/pointers.hpp"
 
 namespace Utils::Secure {
