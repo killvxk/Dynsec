@@ -38,31 +38,35 @@ void SetupInstrumentationCallback() {
 }
 #pragma endregion
 
+DWORD WINAPI MainThread(LPVOID) {
+	if (!Utils::Secure::GetSyscalls()->Initialize()) {
+		printf("failed GetSyscalls()->Initialize\n");
+		return FALSE;
+	}
+
+	uint64_t* value = new uint64_t;
+	*value = 123;
+	printf("ptr: %llx\n", (uint64_t)value);
+
+	uint64_t encoded = (uint64_t)EncodePtr(value);
+	printf("encoded: %llx\n", encoded);
+	printf("decoded: %llx\n", (uint64_t)DecodePtr((void*)encoded));
+
+	delete value;
+
+	auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	printf("test allocated: %llx\n", alloc);
+	if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
+
+	printf("Heap: %llx\n", ProcessEnvironmentBlock->ProcessHeap);
+
+	Dynsec::Shellcode::Execute((void*)0);
+
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-        if (!Utils::Secure::GetSyscalls()->Initialize()) {
-            printf("failed GetSyscalls()->Initialize\n");
-            return FALSE;
-        }
-
-		uint64_t* value = new uint64_t;
-		*value = 123;
-		printf("ptr: %llx\n", (uint64_t)value);
-
-		uint64_t encoded = (uint64_t)EncodePtr(value);
-		printf("encoded: %llx\n", encoded);
-		printf("decoded: %llx\n", (uint64_t)DecodePtr((void*)encoded));
-
-		delete value;
-
-        auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-        printf("test allocated: %llx\n", alloc);
-        if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
-
-		printf("Heap: %llx\n", ProcessEnvironmentBlock->ProcessHeap);
-
-		Dynsec::Shellcode::GetShellcode()->Execute(nullptr);
-
+		CreateThread(0, 0, MainThread, 0, 0, 0);
 		// SetupInstrumentationCallback();
     } else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
         Utils::Secure::GetSyscalls()->Clean();
