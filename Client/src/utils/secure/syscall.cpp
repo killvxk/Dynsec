@@ -93,6 +93,7 @@ namespace Utils::Secure {
 		m_Functions[_NtQuerySystemInformation].second = GetSyscallIndex("NtQuerySystemInformation", m_NtdllDisk);
 		m_Functions[_NtQueryInformationProcess].second = GetSyscallIndex("NtQueryInformationProcess", m_NtdllDisk);
 		m_Functions[_NtSetInformationProcess].second = GetSyscallIndex("NtSetInformationProcess", m_NtdllDisk);
+		m_Functions[_NtCreateThreadEx].second = GetSyscallIndex("NtCreateThreadEx", m_NtdllDisk);
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
@@ -128,6 +129,10 @@ namespace Utils::Secure {
 		m_Functions[_NtSetInformationProcess].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtSetInformationProcess].first)) return false;
 		SetupAllocation(m_Functions[_NtSetInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
+		m_Functions[_NtCreateThreadEx].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		if (!CheckAllocation(m_Functions[_NtCreateThreadEx].first)) return false;
+		SetupAllocation(m_Functions[_NtCreateThreadEx], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
@@ -269,6 +274,21 @@ namespace Utils::Secure {
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtSetInformationProcess].unlock();
+		return Return;
+	}
+
+	NTSTATUS Syscalls::NtCreateThreadEx(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, LPTHREAD_START_ROUTINE lpStartAddress, PVOID lpParameter, ULONG Flags, SIZE_T StackZeroBits, SIZE_T SizeOfStackCommit, SIZE_T SizeOfStackReserve, PVOID lpBytesBuffer)
+	{
+		NTSTATUS Return = 0;
+		
+		m_Mutexs[_NtCreateThreadEx].lock();
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtCreateThreadEx].first);
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, lpStartAddress, lpParameter, Flags, StackZeroBits, SizeOfStackCommit, SizeOfStackReserve, lpBytesBuffer);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtCreateThreadEx].unlock();
 		return Return;
 	}
 

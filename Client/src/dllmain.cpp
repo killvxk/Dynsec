@@ -38,11 +38,12 @@ void SetupInstrumentationCallback() {
 }
 #pragma endregion
 
+DWORD WINAPI TestThread(LPVOID arg) {
+	printf("I'm running with arg=%llx, PID %x and TID %x\n", arg, GetCurrentProcessId(), GetCurrentThreadId());
+	return 0;
+}
+
 DWORD WINAPI MainThread(LPVOID) {
-	if (!Utils::Secure::GetSyscalls()->Initialize()) {
-		printf("failed GetSyscalls()->Initialize\n");
-		return FALSE;
-	}
 
 	uint64_t* value = new uint64_t;
 	*value = 123;
@@ -57,16 +58,26 @@ DWORD WINAPI MainThread(LPVOID) {
 	auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	printf("test allocated: %llx\n", alloc);
 	if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
-
 	printf("Heap: %llx\n", ProcessEnvironmentBlock->ProcessHeap);
+
 
 	Dynsec::Shellcode::Execute((void*)0);
 
+	DWORD tid = 0;
+	Utils::Secure::CreateThread(0, TestThread, (PVOID)0x1337, 0, &tid);
+	printf("New thread is at %x\n", tid);
+
+	return 0;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-		CreateThread(0, 0, MainThread, 0, 0, 0);
+		if (!Utils::Secure::GetSyscalls()->Initialize()) {
+			printf("failed GetSyscalls()->Initialize\n");
+			return FALSE;
+		}
+
+		Utils::Secure::CreateThread(0, MainThread, 0, 0, 0);
 		// SetupInstrumentationCallback();
     } else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
         Utils::Secure::GetSyscalls()->Clean();
