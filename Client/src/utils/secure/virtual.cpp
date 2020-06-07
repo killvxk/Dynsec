@@ -40,11 +40,13 @@ namespace Utils::Secure {
 			return TRUE;
 		}
 
-		if (Status == 0xC0000045
-			// TODO:
-			// && RtlFlushSecureMemoryCache(lpAddress, dwSize)
-			&& GetSyscalls()->NtProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect) >= 0) {
-			return TRUE;
+		// TODO:
+		// && RtlFlushSecureMemoryCache(lpAddress, dwSize)
+		if (Status == 0xC0000045) {
+			Status = GetSyscalls()->NtProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect);
+			if ((Status & 0x80000000) == 0) {
+				return TRUE;
+			}
 		}
 
 		return FALSE;
