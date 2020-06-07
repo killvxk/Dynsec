@@ -42,8 +42,8 @@ namespace Utils::Secure {
 			if (va >= section->VirtualAddress &&
 				va <= (section->VirtualAddress + section->Misc.VirtualSize)) {
 
-				DWORD offset = va - section->VirtualAddress;
-				DWORD rawAddress = section->PointerToRawData + offset;
+				uintptr_t offset = va - section->VirtualAddress;
+				uintptr_t rawAddress = section->PointerToRawData + offset;
 
 				return rawAddress;
 			}
