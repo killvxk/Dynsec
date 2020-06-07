@@ -51,7 +51,7 @@ namespace Utils::Secure {
 		DWORD v10 = dwCreationFlags & 0x10000;
 
 		// It appears like windows uses 64bit for tid/pid in this function
-		// but I've always seen pid/tid as a DWORD value so I've kept them as DWORDs.
+		// but I've always seen pid/tid as a DWORD value so I kept them as DWORDs.
 		struct {
 			DWORD pid;
 			DWORD _pad0;
