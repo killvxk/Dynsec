@@ -50,14 +50,8 @@ namespace Utils::Secure {
 		HANDLE hThread = 0;
 		DWORD v10 = dwCreationFlags & 0x10000;
 
-		// It appears like windows uses 64bit for tid/pid in this function
-		// but I've always seen pid/tid as a DWORD value so I kept them as DWORDs.
-		struct {
-			DWORD pid;
-			DWORD _pad0;
-			DWORD tid;
-			DWORD _pad1;
-		} newThreadInfo;
+
+		CLIENT_ID threadClient;
 
 		PTEB pTeb = 0;
 
@@ -65,7 +59,7 @@ namespace Utils::Secure {
 			uint64_t size;
 			uint64_t unk1;
 			uint64_t unk2;
-			PVOID pNewThreadInfo;
+			PCLIENT_ID pNewThreadInfo;
 			uint64_t unk4;
 			uint64_t unk5;
 			uint64_t unk6;
@@ -77,7 +71,7 @@ namespace Utils::Secure {
 		threadData.unk1 = 0x10003;
 		threadData.unk2 = 0x10;
 		threadData.unk4 = 0;
-		threadData.pNewThreadInfo = &newThreadInfo;
+		threadData.pNewThreadInfo = &threadClient;
 		threadData.unk5 = 0x10004;
 		threadData.unk6 = 8;
 		threadData.unk8 = 0;
@@ -92,7 +86,7 @@ namespace Utils::Secure {
 		}
 
 		if (lpThreadId)
-			*lpThreadId = newThreadInfo.tid;
+			*lpThreadId = (DWORD)threadClient.UniqueThread;
 		
 		if (!(dwCreationFlags & CREATE_SUSPENDED))
 			ResumeThread(hThread); // TODO: syscall NtResumeThread
