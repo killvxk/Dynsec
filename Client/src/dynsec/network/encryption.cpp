@@ -1,5 +1,5 @@
 #include "encryption.hpp"
-#include "dynsec/crypto/rc4.hpp"
+#include "dynsec/crypto/crypto.hpp"
 
 namespace Dynsec::Network {
 	void EncryptPacket(Dynsec::PacketTypes::Request::NetworkBaseHeader* Header) {

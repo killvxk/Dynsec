@@ -19,15 +19,16 @@ namespace Utils::Secure {
 
 		NTSTATUS Status = GetSyscalls()->NtFreeVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, dwFreeType);
 		if (Status == 0xC0000045) {
-			// NEEDED:
+			// TODO:
 			/*if (!RtlFlushSecureMemoryCache(lpAddress, dwSize)) {
 				return FALSE;
 			}*/
 
 			Status = GetSyscalls()->NtFreeVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, dwFreeType);
-			if (Status >= 0) {
-				return TRUE;
-			}
+		}
+
+		if (Status >= 0) {
+			return TRUE;
 		}
 
 		return FALSE;
@@ -35,11 +36,17 @@ namespace Utils::Secure {
 
 	BOOL VirtualProtect(LPVOID lpAddress, ULONG dwSize, DWORD flNewProtect, PDWORD lpflOldProtect) {
 		NTSTATUS Status = GetSyscalls()->NtProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect);
-		if (Status >= 0 || Status == 0xC0000045
-			// NEEDED:
-			// && RtlFlushSecureMemoryCache(lpAddress, dwSize)
-			&& GetSyscalls()->NtProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect) >= 0) {
+		if (Status >= 0) {
 			return TRUE;
+		}
+
+		// TODO:
+		// && RtlFlushSecureMemoryCache(lpAddress, dwSize)
+		if (Status == 0xC0000045) {
+			Status = GetSyscalls()->NtProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect);
+			if ((Status & 0x80000000) == 0) {
+				return TRUE;
+			}
 		}
 
 		return FALSE;
@@ -77,7 +84,7 @@ namespace Utils::Secure {
 		threadData.unk8 = 0;
 		threadData.ppTEB = &pTeb;
 
-		NTSTATUS Status = GetSyscalls()->NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, (HANDLE)-1, lpStartAddress, lpParameter, FALSE, NULL, NULL, dwStackSize & -(signed __int64)(v10 != 0), &threadData);
+		NTSTATUS Status = GetSyscalls()->NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, GetCurrentProcess(), lpStartAddress, lpParameter, FALSE, NULL, NULL, dwStackSize & -(signed __int64)(v10 != 0), &threadData);
 		
 		if (Status >= 0) {
 			printf("TEB: %p\n", pTeb);

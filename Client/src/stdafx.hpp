@@ -16,6 +16,9 @@
 #define EncodePtr Utils::Secure::GetPointers()->EncodePointer
 #define DecodePtr Utils::Secure::GetPointers()->DecodePointer
 
+#undef GetCurrentProcess
+#define GetCurrentProcess() (HANDLE)-1
+
 #ifdef _WIN64
 #define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
 #else

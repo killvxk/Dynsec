@@ -8,7 +8,7 @@ namespace Dynsec::Shellcode {
 		ShellcodeContext* Context = new ShellcodeContext();
 		// ... setup context
 		if (Shellcode) {
-			std::async(std::launch::async, [&] {
+			auto f = std::async(std::launch::async, [&] {
 				Utils::Caller::Call<int>((uint64_t)Shellcode, Context);
 			});
 		}

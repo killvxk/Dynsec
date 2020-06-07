@@ -7,8 +7,8 @@ namespace Utils::Async {
 		ctx->m_Param = Param;
 		ctx->m_Callback = Callback;
 
-		std::async(std::launch::deferred, [&] {
+		auto f = std::async(std::launch::async, [&] {
 			return RunAsync(ctx);
-		}).wait();
+		});
 	}
 }

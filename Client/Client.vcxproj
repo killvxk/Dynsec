@@ -166,7 +166,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\dynsec\crypto\rc4.hpp" />
+    <ClInclude Include="src\dynsec\crypto\crypto.hpp" />
     <ClInclude Include="src\dynsec\init\init.hpp" />
     <ClInclude Include="src\dynsec\network\encryption.hpp" />
     <ClInclude Include="src\dynsec\network\network_socket.hpp" />
@@ -186,7 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp" />
-    <ClCompile Include="src\dynsec\crypto\rc4.cpp" />
+    <ClCompile Include="src\dynsec\crypto\crypto.cpp" />
     <ClCompile Include="src\dynsec\init\init.cpp" />
     <ClCompile Include="src\dynsec\network\encryption.cpp" />
     <ClCompile Include="src\dynsec\network\network_socket.cpp" />
