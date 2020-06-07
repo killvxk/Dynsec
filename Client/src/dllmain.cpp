@@ -34,7 +34,7 @@ void SetupInstrumentationCallback() {
 	PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION cb = { 0, 0, hook_wrapper };
 	// Change Version to 1 for x32
 	// handle -1 == current process
-	Utils::Secure::GetSyscalls()->NtSetInformationProcess((HANDLE)-1, PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
+	Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
 }
 #pragma endregion
 
@@ -57,7 +57,7 @@ DWORD WINAPI MainThread(LPVOID) {
 
 	auto alloc = Utils::Secure::VirtualAlloc(0, 0x10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	printf("test allocated: %llx\n", alloc);
-	if (alloc) VirtualFree(alloc, 0, MEM_RELEASE);
+	if (alloc) printf("virtualfree resp: %i\n", Utils::Secure::VirtualFree(alloc, 0, MEM_RELEASE));
 	printf("Heap: %llx\n", ProcessEnvironmentBlock->ProcessHeap);
 
 

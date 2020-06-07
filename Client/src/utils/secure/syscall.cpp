@@ -262,8 +262,7 @@ namespace Utils::Secure {
 		return Return;
 	}
 
-	NTSTATUS Syscalls::NtSetInformationProcess(HANDLE ProcessHandle, PROCESS_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength)
-	{
+	NTSTATUS Syscalls::NtSetInformationProcess(HANDLE ProcessHandle, PROCESS_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength) {
 		NTSTATUS Return = 0;
 
 		m_Mutexs[_NtSetInformationProcess].lock();
@@ -277,8 +276,7 @@ namespace Utils::Secure {
 		return Return;
 	}
 
-	NTSTATUS Syscalls::NtCreateThreadEx(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, LPTHREAD_START_ROUTINE lpStartAddress, PVOID lpParameter, ULONG Flags, SIZE_T StackZeroBits, SIZE_T SizeOfStackCommit, SIZE_T SizeOfStackReserve, PVOID lpBytesBuffer)
-	{
+	NTSTATUS Syscalls::NtCreateThreadEx(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, LPTHREAD_START_ROUTINE lpStartAddress, PVOID lpParameter, ULONG Flags, SIZE_T StackZeroBits, SIZE_T SizeOfStackCommit, SIZE_T SizeOfStackReserve, PVOID lpBytesBuffer) {
 		NTSTATUS Return = 0;
 		
 		m_Mutexs[_NtCreateThreadEx].lock();
