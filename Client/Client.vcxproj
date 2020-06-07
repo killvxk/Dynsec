@@ -182,6 +182,7 @@
     <ClInclude Include="src\utils\secure\module.hpp" />
     <ClInclude Include="src\utils\structs.hpp" />
     <ClInclude Include="src\utils\secure\syscall.hpp" />
+    <ClInclude Include="src\utils\utils.hpp" />
     <ClInclude Include="src\utils\va.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -202,6 +203,7 @@
     <ClCompile Include="src\utils\secure\pointers.cpp" />
     <ClCompile Include="src\utils\secure\syscall.cpp" />
     <ClCompile Include="src\utils\secure\virtual.cpp" />
+    <ClCompile Include="src\utils\utils.cpp" />
     <ClCompile Include="src\utils\va.cpp" />
   </ItemGroup>
   <ItemGroup>

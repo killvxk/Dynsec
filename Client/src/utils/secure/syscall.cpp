@@ -11,12 +11,24 @@ namespace Utils::Secure {
 			uint8_t key[] = { 0x73, 0x75, 0x70, 0x61, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x20, 0x6B, 0x65, 0x79 };
 			Dynsec::Crypto::RC4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
 
+			// random key each time
+			Address->m_XorKey = (uint8_t)(rand() % 255);
+
+			for (uint8_t i = 0; i < Address->m_Size; i++) {
+				Address->m_ShellCode[i] ^= Address->m_XorKey;
+			}
+
 			Address->m_Encrypted = true;
 		}
 	}
 
 	void DecryptAllocation(Syscalls::CryptedAllocItem* Address) {
 		if (Address->m_Encrypted) {
+			// random key each time
+			for (uint8_t i = 0; i < Address->m_Size; i++) {
+				Address->m_ShellCode[i] ^= Address->m_XorKey;
+			}
+
 			// on the stack for extra poggers - "supa secret key"
 			uint8_t key[] = { 0x73, 0x75, 0x70, 0x61, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x20, 0x6B, 0x65, 0x79 };
 			Dynsec::Crypto::RC4(key, sizeof(key), Address->m_ShellCode, Address->m_Size);
@@ -97,11 +109,11 @@ namespace Utils::Secure {
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
-		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
 
-		m_Functions[_NtQueryInformationProcess].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQueryInformationProcess].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!CheckAllocation(m_Functions[_NtQueryInformationProcess].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
 
@@ -110,27 +122,27 @@ namespace Utils::Secure {
 		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)EncodePtr(m_Functions[_NtAllocateVirtualMemory].first);
 
 		// now that the above syscall is resolved, we can use the secure ptrs
-		m_Functions[_NtFreeVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		m_Functions[_NtFreeVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtFreeVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtFreeVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtProtectVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		m_Functions[_NtProtectVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtProtectVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtProtectVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQueryVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		m_Functions[_NtQueryVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtQueryVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtQuerySystemInformation].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		m_Functions[_NtQuerySystemInformation].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtQuerySystemInformation].first)) return false;
 		SetupAllocation(m_Functions[_NtQuerySystemInformation], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtSetInformationProcess].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		m_Functions[_NtSetInformationProcess].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtSetInformationProcess].first)) return false;
 		SetupAllocation(m_Functions[_NtSetInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 
-		m_Functions[_NtCreateThreadEx].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + 2, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		m_Functions[_NtCreateThreadEx].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtCreateThreadEx].first)) return false;
 		SetupAllocation(m_Functions[_NtCreateThreadEx], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		

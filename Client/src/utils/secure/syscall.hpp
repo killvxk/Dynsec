@@ -7,6 +7,7 @@ namespace Utils::Secure {
 		struct CryptedAllocItem {
 			uint8_t m_Size;
 			bool m_Encrypted;
+			uint8_t m_XorKey;
 			uint8_t m_ShellCode[1];
 		};
 

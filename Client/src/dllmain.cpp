@@ -72,6 +72,8 @@ DWORD WINAPI MainThread(LPVOID) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+		srand((unsigned int)time(0));
+
 		if (!Utils::Secure::GetSyscalls()->Initialize()) {
 			printf("failed GetSyscalls()->Initialize\n");
 			return FALSE;
