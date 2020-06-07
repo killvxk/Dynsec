@@ -1,7 +1,7 @@
 #include "virtual.hpp"
 #include "syscall.hpp"
 #include "utils/caller.hpp"
-
+#include "utils/structs.hpp"
 namespace Utils::Secure {
 	LPVOID VirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
 		LPVOID Address = lpAddress;
@@ -50,28 +50,47 @@ namespace Utils::Secure {
 		HANDLE hThread = 0;
 		DWORD v10 = dwCreationFlags & 0x10000;
 
+		// It appears like windows uses 64bit for tid/pid in this function
+		// but I've always seen pid/tid as a DWORD value so I've kept them as DWORDs.
 		struct {
 			DWORD pid;
-			DWORD _pad1;
+			DWORD _pad0;
 			DWORD tid;
-			DWORD _pad2;
+			DWORD _pad1;
 		} newThreadInfo;
 
-		DWORD64 unkData = 0;
+		PTEB pTeb = 0;
 
-		DWORD64 unkThreadInfo[9];
-		unkThreadInfo[0] = 32 * 2 + 8; // from KernelBase.CreateThreadEx. (also size of unkThreadInfo)
-		unkThreadInfo[1] = 0x10003;
-		unkThreadInfo[2] = 0x10;
-		unkThreadInfo[4] = 0;
-		unkThreadInfo[3] = (__int64)&newThreadInfo;
-		unkThreadInfo[5] = 0x10004;
-		unkThreadInfo[6] = 8;
-		unkThreadInfo[8] = 0;
-		unkThreadInfo[7] = (__int64)&unkData;
+		struct {
+			uint64_t size;
+			uint64_t unk1;
+			uint64_t unk2;
+			PVOID pNewThreadInfo;
+			uint64_t unk4;
+			uint64_t unk5;
+			uint64_t unk6;
+			PTEB* ppTEB;
+			uint64_t unk8;
+		} threadData;
 
-		NTSTATUS Status = GetSyscalls()->NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, (HANDLE)-1, lpStartAddress, lpParameter, FALSE, NULL, NULL, dwStackSize & -(signed __int64)(v10 != 0), &unkThreadInfo[0]);
+		threadData.size = 32 * 2 + 8; // from KernelBase.CreateThreadEx. (also size of unkThreadInfo)
+		threadData.unk1 = 0x10003;
+		threadData.unk2 = 0x10;
+		threadData.unk4 = 0;
+		threadData.pNewThreadInfo = &newThreadInfo;
+		threadData.unk5 = 0x10004;
+		threadData.unk6 = 8;
+		threadData.unk8 = 0;
+		threadData.ppTEB = &pTeb;
+
+		NTSTATUS Status = GetSyscalls()->NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, (HANDLE)-1, lpStartAddress, lpParameter, FALSE, NULL, NULL, dwStackSize & -(signed __int64)(v10 != 0), &threadData);
 		
+		if (Status >= 0) {
+			printf("TEB: %p\n", pTeb);
+			printf("test: %x\n", pTeb->ClientId.UniqueThread);
+			printf("tls links: %p\n", pTeb->TlsLinks);
+		}
+
 		if (lpThreadId)
 			*lpThreadId = newThreadInfo.tid;
 		
