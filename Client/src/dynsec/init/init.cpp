@@ -26,10 +26,9 @@ namespace Dynsec::Init {
 #endif
 		Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &InstrumentationCallback, sizeof(InstrumentationCallback));
 
-		// Test thread for TLS callback print
-		Utils::Secure::CreateThread(0, [] (LPVOID) -> DWORD {
-			printf("Thread created!\n");
-			return 0;
-		}, 0, 0, 0);
+		auto MemoryPages = Utils::Secure::GetMemoryPages();
+		for (auto& Page : MemoryPages) {
+			printf("Page: %llx -> %llx\n", Page.BaseAddress, (uint64_t)Page.BaseAddress + Page.RegionSize);
+		}
 	}
 }

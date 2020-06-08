@@ -42,8 +42,7 @@ namespace Utils::Secure {
 
 		if (Encoded) {
 			Address = (Syscalls::CryptedAllocItem*)DecodePtr(lpAddress.first);
-		}
-		else Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
+		} else Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
 
 		memcpy(&Address->m_ShellCode, SyscallShellcode, ShellcodeSize);
 		*(int*)(&Address->m_ShellCode[ShellcodeIndexOffset]) = lpAddress.second;
@@ -165,8 +164,7 @@ namespace Utils::Secure {
 
 		if (pDisk) {
 			FunctionAddress = Utils::Secure::GetProcAddressDisk((HMODULE)pDisk, pFunction);
-		}
-		else FunctionAddress = Utils::Secure::GetProcAddress(Utils::Secure::GetModuleHandle(L"ntdll.dll"), pFunction);
+		} else FunctionAddress = Utils::Secure::GetProcAddress(Utils::Secure::GetModuleHandle(L"ntdll.dll"), pFunction);
 
 		if (FunctionAddress) {
 			uint64_t Address = (uint64_t)FunctionAddress;

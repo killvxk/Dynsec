@@ -55,11 +55,8 @@ namespace Utils::Secure {
 	HANDLE CreateThread(SIZE_T dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId) {
 		// Will not behave exactly like CreateThread, there's actually quite a bit of setup done CreateThread before calling the nt func
 		HANDLE hThread = 0;
-		DWORD v10 = dwCreationFlags & 0x10000;
-
 
 		CLIENT_ID threadClient;
-
 		PTEB pTeb = 0;
 
 		struct {
@@ -84,22 +81,37 @@ namespace Utils::Secure {
 		threadData.unk8 = 0;
 		threadData.ppTEB = &pTeb;
 
-		NTSTATUS Status = GetSyscalls()->NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, GetCurrentProcess(), lpStartAddress, lpParameter, FALSE, NULL, NULL, dwStackSize & -(signed __int64)(v10 != 0), &threadData);
+		NTSTATUS Status = GetSyscalls()->NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, GetCurrentProcess(), lpStartAddress, lpParameter, FALSE, NULL, NULL, dwStackSize & -(signed __int64)((dwCreationFlags & 0x10000) != 0), &threadData);
 		
-		if (Status >= 0) {
-			printf("TEB: %p\n", pTeb);
-			printf("test: %x\n", pTeb->ClientId.UniqueThread);
-			printf("tls links: %p\n", pTeb->TlsLinks);
+		if (lpThreadId) {
+			*lpThreadId = (DWORD)threadClient.UniqueThread;
+		}
+		
+		if (!(dwCreationFlags & CREATE_SUSPENDED)) {
+			ResumeThread(hThread); // TODO: syscall NtResumeThread
 		}
 
-		if (lpThreadId)
-			*lpThreadId = (DWORD)threadClient.UniqueThread;
-		
-		if (!(dwCreationFlags & CREATE_SUSPENDED))
-			ResumeThread(hThread); // TODO: syscall NtResumeThread
-
-		if (Status >= 0)
+		if (Status >= 0) {
 			return hThread;
+		}
+
 		return (HANDLE)INVALID_HANDLE_VALUE; 
+	}
+
+	std::vector<MEMORY_BASIC_INFORMATION> GetMemoryPages() {
+		std::vector<MEMORY_BASIC_INFORMATION> Pages;
+
+		NTSTATUS Status = 0;
+		uint64_t CurrentScanAddress = 0;
+		MEMORY_BASIC_INFORMATION PageInformation = { 0 };
+		SIZE_T OutLength = 0;
+
+		while ((Status = GetSyscalls()->NtQueryVirtualMemory(GetCurrentProcess(), (void*)CurrentScanAddress, 0, &PageInformation, sizeof(PageInformation), &OutLength)) == 0) {
+			Pages.push_back(PageInformation);
+			CurrentScanAddress += PageInformation.RegionSize;
+			memset(&PageInformation, 0, sizeof(PageInformation));
+		}
+
+		return Pages;
 	}
 }
