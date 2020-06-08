@@ -16,7 +16,7 @@ namespace Dynsec::Routines {
 	// This causes a lock randomly with the code thats inside :(
 	extern "C" void __fastcall hook_routine(uintptr_t rcx /*return addr*/, uintptr_t rdx /*return result*/) {
 		// We want to avoid having a recursion issue if we call other system functions in here
-		/*if (Global::Vars::g_ProcessingSyscallCallback) {
+		if (Global::Vars::g_ProcessingSyscallCallback) {
 			return;
 		}
 
@@ -25,6 +25,6 @@ namespace Dynsec::Routines {
 		// handle syscall
 		printf("Syscall returning to %p with result %08x\n", rcx, rdx);
 
-		Global::Vars::g_ProcessingSyscallCallback = false;*/
+		Global::Vars::g_ProcessingSyscallCallback = false;
 	}
 }
