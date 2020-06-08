@@ -275,3 +275,10 @@ typedef struct _TEB
 	UINT64 TotalSwitchOutTime;
 	LARGE_INTEGER WaitReasonBitMap;
 } TEB, *PTEB;
+
+struct _TLS_ENTRY
+{
+	LIST_ENTRY TlsEntryLinks;
+	IMAGE_TLS_DIRECTORY TlsDirectory;
+	_LDR_DATA_TABLE_ENTRY *ModuleEntry;
+};
