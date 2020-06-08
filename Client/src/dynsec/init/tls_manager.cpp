@@ -1,10 +1,11 @@
-#include "TLSManager.hpp"
+#include "tls_manager.hpp"
 #include "global/variables.hpp"
 #include "utils/secure/syscall.hpp"
 #include "utils/secure/virtual.hpp"
 
 namespace Dynsec::Init {
 	void TLSManager::Setup() {
+		// TODO: Sig scan these
 		m_pInLoadOrderModuleList = (void*)((uintptr_t)Utils::Secure::GetModuleHandle(L"ntdll.dll") + 0x1653D0);
 		m_pLdrpTlsList = (void*)((uintptr_t)Utils::Secure::GetModuleHandle(L"ntdll.dll") + 0x15F520);
 
@@ -66,8 +67,7 @@ namespace Dynsec::Init {
 		return count;
 	}
 
-	SIZE_T TLSManager::FindCallbackIndex(PTLS_ENTRY entry, PIMAGE_TLS_CALLBACK callback)
-	{
+	SIZE_T TLSManager::FindCallbackIndex(PTLS_ENTRY entry, PIMAGE_TLS_CALLBACK callback) {
 		PIMAGE_TLS_CALLBACK* pCallbackList = (PIMAGE_TLS_CALLBACK*)entry->TlsDirectory.AddressOfCallBacks;
 
 		if (!pCallbackList) {
@@ -122,31 +122,34 @@ namespace Dynsec::Init {
 		return true;
 	}
 
-	bool TLSManager::UnregisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback)
-	{
-		if (!m_IsCustomCallbackArray)
+	bool TLSManager::UnregisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback) {
+		if (!m_IsCustomCallbackArray) {
 			Setup();
+		}
+
 		PTLS_ENTRY entry = FindTlsEntryForModule(module);
-		if (entry == nullptr)
+		if (entry == nullptr) {
 			return false;
+		}
 
 		SIZE_T nCallbacks = GetTlsCallbackCount(entry);
-		if (nCallbacks <= 0)
+		if (nCallbacks <= 0) {
 			return false;
+		}
 
 		if (nCallbacks == 1) {
 			// Check if it's actually the callback we want to unregister
-			if (*(void**)entry->TlsDirectory.AddressOfCallBacks != pCallback)
+			if (*(void**)entry->TlsDirectory.AddressOfCallBacks != pCallback) {
 				return false;
+			}
+
 			entry->TlsDirectory.AddressOfCallBacks = 0;
 			return true;
 		}
 
 		uintptr_t** callbacks = *(uintptr_t***)entry->TlsDirectory.AddressOfCallBacks;
 
-		int iCallbackIndex = FindCallbackIndex(entry, pCallback);
-
-
+		SIZE_T iCallbackIndex = FindCallbackIndex(entry, pCallback);
 
 		// We need an array of nCallbacks size because we need to keep in mind that 
 		// the array needs the last item to be 0. (last item(0) not counted in nCallbacks)
@@ -156,33 +159,30 @@ namespace Dynsec::Init {
 			memcpy(callbacksMemory, 
 				(void*)(entry->TlsDirectory.AddressOfCallBacks + sizeof(uintptr_t)), 
 				(nCallbacks - 1) * sizeof(uintptr_t));
-		}
-		else if (iCallbackIndex == nCallbacks) {
+		} else if (iCallbackIndex == nCallbacks) {
 			memcpy(callbacksMemory, 
 				(void*)entry->TlsDirectory.AddressOfCallBacks, 
 				(nCallbacks - 1) * sizeof(uintptr_t));
-		}
-		else {
+		} else {
 			memcpy(callbacksMemory, 
 				(void*)entry->TlsDirectory.AddressOfCallBacks, 
 				(iCallbackIndex - 1) * sizeof(uintptr_t));
+
 			memcpy(callbacksMemory + (iCallbackIndex - 1), 
 				(uintptr_t*)(entry->TlsDirectory.AddressOfCallBacks) + iCallbackIndex, 
 				(nCallbacks - iCallbackIndex) * sizeof(uintptr_t));
 		}
 
-		if (m_IsCustomCallbackArray)
+		if (m_IsCustomCallbackArray) {
 			delete (void*)entry->TlsDirectory.AddressOfCallBacks;
+		}
 
 		callbacksMemory[nCallbacks] = 0;
-
 		entry->TlsDirectory.AddressOfCallBacks = (uintptr_t)callbacksMemory;
-
 		m_IsCustomCallbackArray = true;
 
 		return true;
 	}
-
 
 	TLSManager* GetTLSManager() {
 		static TLSManager Instance;

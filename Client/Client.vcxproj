@@ -168,7 +168,8 @@
   <ItemGroup>
     <ClInclude Include="src\dynsec\crypto\crypto.hpp" />
     <ClInclude Include="src\dynsec\init\init.hpp" />
-    <ClInclude Include="src\dynsec\init\TLSManager.hpp" />
+    <ClInclude Include="src\dynsec\init\routines\routines.hpp" />
+    <ClInclude Include="src\dynsec\init\tls_manager.hpp" />
     <ClInclude Include="src\dynsec\network\encryption.hpp" />
     <ClInclude Include="src\dynsec\network\network_socket.hpp" />
     <ClInclude Include="src\dynsec\shellcode\shellcode.hpp" />
@@ -191,7 +192,8 @@
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\dynsec\crypto\crypto.cpp" />
     <ClCompile Include="src\dynsec\init\init.cpp" />
-    <ClCompile Include="src\dynsec\init\TLSManager.cpp" />
+    <ClCompile Include="src\dynsec\init\routines\routines.cpp" />
+    <ClCompile Include="src\dynsec\init\tls_manager.cpp" />
     <ClCompile Include="src\dynsec\network\encryption.cpp" />
     <ClCompile Include="src\dynsec\network\network_socket.cpp" />
     <ClCompile Include="src\dynsec\shellcode\shellcode.cpp" />

@@ -26,8 +26,8 @@ namespace Utils {
 			arrayOfByte[3 - i] = (param >> (i * 8));
 		return arrayOfByte;
 	}
-	uint64_t GetThreadEntryPoint(HANDLE hThread)
-	{
+
+	uint64_t GetThreadEntryPoint(HANDLE hThread) {
 		NTSTATUS ntStatus;
 		DWORD64 dwThreadStartAddr = 0;
 		HANDLE hNewThreadHandle;

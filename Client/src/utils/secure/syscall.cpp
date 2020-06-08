@@ -55,6 +55,8 @@ namespace Utils::Secure {
 	bool Syscalls::Initialize() {
 		auto start = std::chrono::high_resolution_clock::now();
 
+		// TODO: Syscall shellcode for each windows versions
+
 #ifdef _WIN64
 		const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
 		uint8_t ShellcodeIndexOffset = 4;
