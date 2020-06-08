@@ -20,6 +20,8 @@ namespace Dynsec::Init {
 				return entry;
 			}
 		}
+
+		return nullptr;
 	}
 
 	PTLS_ENTRY TLSManager::FindTlsEntryForModule(HMODULE hModule) {
