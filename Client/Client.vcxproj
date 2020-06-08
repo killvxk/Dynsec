@@ -173,6 +173,7 @@
     <ClInclude Include="src\dynsec\shellcode\shellcode.hpp" />
     <ClInclude Include="src\dynsec\types\init_types.hpp" />
     <ClInclude Include="src\dynsec\types\packet_types.hpp" />
+    <ClInclude Include="src\global\variables.hpp" />
     <ClInclude Include="src\stdafx.hpp" />
     <ClInclude Include="src\utils\async.hpp" />
     <ClInclude Include="src\utils\caller.hpp" />
@@ -192,6 +193,7 @@
     <ClCompile Include="src\dynsec\network\encryption.cpp" />
     <ClCompile Include="src\dynsec\network\network_socket.cpp" />
     <ClCompile Include="src\dynsec\shellcode\shellcode.cpp" />
+    <ClCompile Include="src\global\variables.cpp" />
     <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
