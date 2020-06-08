@@ -9,6 +9,7 @@
 #include "dynsec/shellcode/shellcode.hpp"
 #include "global/variables.hpp"
 #include "dynsec/init/TLSManager.hpp"
+#include "utils/utils.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -49,6 +50,8 @@ void NTAPI OnTlsEvent(PVOID DllHandle, DWORD dwReason, PVOID) {
 }
 
 void NTAPI OnTlsEvent2(PVOID DllHandle, DWORD dwReason, PVOID) {
+	if(dwReason == DLL_THREAD_ATTACH)
+		printf("Thread created at %p\n", Utils::GetThreadEntryPoint(GetCurrentThread()));
 	printf("============================TLS registered V2\n");
 }
 #pragma endregion

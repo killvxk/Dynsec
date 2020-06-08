@@ -22,6 +22,7 @@ namespace Utils::Secure {
 		NTSTATUS NtQueryInformationProcess(HANDLE ProcessHandle, int ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 		NTSTATUS NtSetInformationProcess(HANDLE ProcessHandle, PROCESS_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength);
 		NTSTATUS NtCreateThreadEx(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, LPTHREAD_START_ROUTINE lpStartAddress, PVOID lpParameter, ULONG Flags, SIZE_T StackZeroBits, SIZE_T SizeOfStackCommit, SIZE_T SizeOfStackReserve, PVOID lpBytesBuffer);
+		NTSTATUS NtQueryInformationThread(HANDLE ThreadHandle, int ProcessInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength, PULONG ReturnLength);
 	private:
 		enum eFunctions {
 			_NtAllocateVirtualMemory,
@@ -31,7 +32,8 @@ namespace Utils::Secure {
 			_NtQuerySystemInformation,
 			_NtQueryInformationProcess,
 			_NtSetInformationProcess,
-			_NtCreateThreadEx
+			_NtCreateThreadEx,
+			_NtQueryInformationThread
 		};
 
 		LPVOID m_NtdllDisk = nullptr;

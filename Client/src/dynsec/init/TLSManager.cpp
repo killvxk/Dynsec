@@ -163,8 +163,12 @@ namespace Dynsec::Init {
 				(nCallbacks - 1) * sizeof(uintptr_t));
 		}
 		else {
-			memcpy(callbacksMemory, (void*)entry->TlsDirectory.AddressOfCallBacks, (iCallbackIndex - 1) * sizeof(uintptr_t));
-			memcpy(callbacksMemory + (iCallbackIndex - 1), (uintptr_t*)(entry->TlsDirectory.AddressOfCallBacks) + iCallbackIndex, (nCallbacks - iCallbackIndex) * sizeof(uintptr_t));
+			memcpy(callbacksMemory, 
+				(void*)entry->TlsDirectory.AddressOfCallBacks, 
+				(iCallbackIndex - 1) * sizeof(uintptr_t));
+			memcpy(callbacksMemory + (iCallbackIndex - 1), 
+				(uintptr_t*)(entry->TlsDirectory.AddressOfCallBacks) + iCallbackIndex, 
+				(nCallbacks - iCallbackIndex) * sizeof(uintptr_t));
 		}
 
 		if (m_IsCustomCallbackArray)

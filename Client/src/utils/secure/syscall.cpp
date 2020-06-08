@@ -42,7 +42,8 @@ namespace Utils::Secure {
 
 		if (Encoded) {
 			Address = (Syscalls::CryptedAllocItem*)DecodePtr(lpAddress.first);
-		} else Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
+		}
+		else Address = (Syscalls::CryptedAllocItem*)lpAddress.first;
 
 		memcpy(&Address->m_ShellCode, SyscallShellcode, ShellcodeSize);
 		*(int*)(&Address->m_ShellCode[ShellcodeIndexOffset]) = lpAddress.second;
@@ -64,7 +65,7 @@ namespace Utils::Secure {
 		uint8_t ShellcodeSize = 8;
 #endif
 
-		auto CheckAllocation = [this] (LPVOID lpAddress) {
+		auto CheckAllocation = [this](LPVOID lpAddress) {
 			if (!lpAddress) {
 				Clean();
 				return false;
@@ -73,7 +74,7 @@ namespace Utils::Secure {
 			return true;
 		};
 
-		auto SecureVirtualAlloc = [&] (LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) -> LPVOID {
+		auto SecureVirtualAlloc = [&](LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) -> LPVOID {
 			if (NtAllocateVirtualMemory(GetCurrentProcess(), &lpAddress, 0, &dwSize, flAllocationType, flProtect) >= 0) {
 				return lpAddress;
 			}
@@ -106,6 +107,7 @@ namespace Utils::Secure {
 		m_Functions[_NtQueryInformationProcess].second = GetSyscallIndex("NtQueryInformationProcess", m_NtdllDisk);
 		m_Functions[_NtSetInformationProcess].second = GetSyscallIndex("NtSetInformationProcess", m_NtdllDisk);
 		m_Functions[_NtCreateThreadEx].second = GetSyscallIndex("NtCreateThreadEx", m_NtdllDisk);
+		m_Functions[_NtQueryInformationThread].second = GetSyscallIndex("NtQueryInformationThread", m_NtdllDisk);
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
@@ -145,7 +147,11 @@ namespace Utils::Secure {
 		m_Functions[_NtCreateThreadEx].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtCreateThreadEx].first)) return false;
 		SetupAllocation(m_Functions[_NtCreateThreadEx], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
-		
+
+		m_Functions[_NtQueryInformationThread].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		if (!CheckAllocation(m_Functions[_NtQueryInformationThread].first)) return false;
+		SetupAllocation(m_Functions[_NtQueryInformationThread], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 		printf("%i microseconds to initialize syscalls\n", microseconds);
@@ -157,23 +163,24 @@ namespace Utils::Secure {
 
 		if (pDisk) {
 			FunctionAddress = Utils::Secure::GetProcAddressDisk((HMODULE)pDisk, pFunction);
-		} else FunctionAddress = Utils::Secure::GetProcAddress(Utils::Secure::GetModuleHandle(L"ntdll.dll"), pFunction);
+		}
+		else FunctionAddress = Utils::Secure::GetProcAddress(Utils::Secure::GetModuleHandle(L"ntdll.dll"), pFunction);
 
 		if (FunctionAddress) {
 			uint64_t Address = (uint64_t)FunctionAddress;
 #ifdef _WIN64
 			if (*(uint8_t*)Address == 0x49 || *(uint8_t*)Address == 0x4C) {
 				return *(int*)(Address + 4);
-			}
+		}
 #else
 			if (*(uint8_t*)Address == 0xB8) {
 				return *(int*)(Address + 1);
 			}
 #endif
-		}
+	}
 
 		return 0;
-	}
+}
 
 	void Syscalls::Clean() {
 		for (auto& it : m_Functions) {
@@ -262,10 +269,11 @@ namespace Utils::Secure {
 		if (FirstCall) {
 			FirstCall = false;
 			Address = (CryptedAllocItem*)m_Functions[_NtQueryInformationProcess].first;
-		} else {
+		}
+		else {
 			Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtQueryInformationProcess].first);
 		}
-		 
+
 		DecryptAllocation(Address);
 		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
 		EncryptAllocation(Address);
@@ -290,7 +298,7 @@ namespace Utils::Secure {
 
 	NTSTATUS Syscalls::NtCreateThreadEx(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, LPTHREAD_START_ROUTINE lpStartAddress, PVOID lpParameter, ULONG Flags, SIZE_T StackZeroBits, SIZE_T SizeOfStackCommit, SIZE_T SizeOfStackReserve, PVOID lpBytesBuffer) {
 		NTSTATUS Return = 0;
-		
+
 		m_Mutexs[_NtCreateThreadEx].lock();
 		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtCreateThreadEx].first);
 
@@ -299,6 +307,21 @@ namespace Utils::Secure {
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtCreateThreadEx].unlock();
+		return Return;
+	}
+
+
+	NTSTATUS Syscalls::NtQueryInformationThread(HANDLE ThreadHandle, int ProcessInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength, PULONG ReturnLength) {
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtQueryInformationThread].lock();
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtQueryInformationThread].first);
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ThreadHandle, ProcessInformationClass, ThreadInformation, ThreadInformationLength, ReturnLength);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtQueryInformationThread].unlock();
 		return Return;
 	}
 
