@@ -10,6 +10,10 @@ hook_wrapper PROC
 	push r8
 	push r9
 	push r11
+	push r12
+	push r13
+	push r14
+	push r15
 	sub rsp,28h
 	mov rcx, r10 ; return address
 	mov rdx, rax ; return value
@@ -17,6 +21,10 @@ hook_wrapper PROC
 	call hook_routine ; we call the cpp code
 	pop r10
 	add rsp,28h
+	pop r15
+	pop r14
+	pop r13
+	pop r12
 	pop r11
 	pop r8
 	pop r9
