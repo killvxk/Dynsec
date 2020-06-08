@@ -8,7 +8,7 @@
 #include "utils/secure/pointers.hpp"
 #include "dynsec/shellcode/shellcode.hpp"
 #include "global/variables.hpp"
-#include "../TLSManager.h"
+#include "dynsec/init/TLSManager.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -38,7 +38,6 @@ void SetupInstrumentationCallback() {
 	// handle -1 == current process
 	Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &cb, sizeof(cb));
 }
-#pragma endregion
 
 DWORD WINAPI TestThread(LPVOID arg) {
 	printf("I'm running with arg=%llx, PID %x and TID %x\n", arg, GetCurrentProcessId(), GetCurrentThreadId());
@@ -48,16 +47,16 @@ DWORD WINAPI TestThread(LPVOID arg) {
 void NTAPI OnTlsEvent(PVOID DllHandle, DWORD dwReason, PVOID) {
 	printf("============================TLS registered\n");
 }
+
 void NTAPI OnTlsEvent2(PVOID DllHandle, DWORD dwReason, PVOID) {
 	printf("============================TLS registered V2\n");
 }
-
-
+#pragma endregion
 
 DWORD WINAPI MainThread(LPVOID) {
 	//SetupTLS();
-	GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, OnTlsEvent);
-	GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, OnTlsEvent2);
+	Dynsec::Init::GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, OnTlsEvent);
+	Dynsec::Init::GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, OnTlsEvent2);
 
 	uint64_t* value = new uint64_t;
 	*value = 123;

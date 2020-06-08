@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClInclude Include="src\dynsec\crypto\crypto.hpp" />
     <ClInclude Include="src\dynsec\init\init.hpp" />
+    <ClInclude Include="src\dynsec\init\TLSManager.hpp" />
     <ClInclude Include="src\dynsec\network\encryption.hpp" />
     <ClInclude Include="src\dynsec\network\network_socket.hpp" />
     <ClInclude Include="src\dynsec\shellcode\shellcode.hpp" />
@@ -185,12 +186,12 @@
     <ClInclude Include="src\utils\secure\syscall.hpp" />
     <ClInclude Include="src\utils\utils.hpp" />
     <ClInclude Include="src\utils\va.hpp" />
-    <ClInclude Include="TLSManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\dynsec\crypto\crypto.cpp" />
     <ClCompile Include="src\dynsec\init\init.cpp" />
+    <ClCompile Include="src\dynsec\init\TLSManager.cpp" />
     <ClCompile Include="src\dynsec\network\encryption.cpp" />
     <ClCompile Include="src\dynsec\network\network_socket.cpp" />
     <ClCompile Include="src\dynsec\shellcode\shellcode.cpp" />
@@ -208,7 +209,6 @@
     <ClCompile Include="src\utils\secure\virtual.cpp" />
     <ClCompile Include="src\utils\utils.cpp" />
     <ClCompile Include="src\utils\va.cpp" />
-    <ClCompile Include="TLSManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="src\syscall_callback.asm" />
