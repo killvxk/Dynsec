@@ -8,6 +8,7 @@
 #include "utils/secure/pointers.hpp"
 #include "dynsec/shellcode/shellcode.hpp"
 #include "global/variables.hpp"
+#include "../TLSManager.h"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -21,7 +22,7 @@ extern "C" void __fastcall hook_wrapper(VOID);
 bool g_isProcessingSyscall = false;
 extern "C" void __fastcall hook_routine(uintptr_t rcx/*return addr*/, uintptr_t rdx/*return result*/) {
 	// We want to avoid having a recursion issue if we call other system functions in here
-	if (g_isProcessingSyscall) 
+	if (g_isProcessingSyscall)
 		return;
 
 	g_isProcessingSyscall = 1;
@@ -44,7 +45,19 @@ DWORD WINAPI TestThread(LPVOID arg) {
 	return 0;
 }
 
+void NTAPI OnTlsEvent(PVOID DllHandle, DWORD dwReason, PVOID) {
+	printf("============================TLS registered\n");
+}
+void NTAPI OnTlsEvent2(PVOID DllHandle, DWORD dwReason, PVOID) {
+	printf("============================TLS registered V2\n");
+}
+
+
+
 DWORD WINAPI MainThread(LPVOID) {
+	//SetupTLS();
+	GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, OnTlsEvent);
+	GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, OnTlsEvent2);
 
 	uint64_t* value = new uint64_t;
 	*value = 123;
@@ -72,7 +85,7 @@ DWORD WINAPI MainThread(LPVOID) {
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
-    if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
 		Global::Vars::g_ModuleHandle = hModule;
 
 		srand((unsigned int)time(0));
@@ -84,9 +97,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 		Utils::Secure::CreateThread(0, MainThread, 0, 0, 0);
 		// SetupInstrumentationCallback();
-    } else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
-        Utils::Secure::GetSyscalls()->Clean();
-    }
+	}
+	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
+		Utils::Secure::GetSyscalls()->Clean();
+	}
 
-    return TRUE;
+	return TRUE;
 }

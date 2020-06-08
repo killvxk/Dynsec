@@ -276,9 +276,9 @@ typedef struct _TEB
 	LARGE_INTEGER WaitReasonBitMap;
 } TEB, *PTEB;
 
-struct _TLS_ENTRY
+typedef struct _TLS_ENTRY
 {
 	LIST_ENTRY TlsEntryLinks;
 	IMAGE_TLS_DIRECTORY TlsDirectory;
 	_LDR_DATA_TABLE_ENTRY *ModuleEntry;
-};
+} TLS_ENTRY, *PTLS_ENTRY;

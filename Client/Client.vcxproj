@@ -185,6 +185,7 @@
     <ClInclude Include="src\utils\secure\syscall.hpp" />
     <ClInclude Include="src\utils\utils.hpp" />
     <ClInclude Include="src\utils\va.hpp" />
+    <ClInclude Include="TLSManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp" />
@@ -207,6 +208,7 @@
     <ClCompile Include="src\utils\secure\virtual.cpp" />
     <ClCompile Include="src\utils\utils.cpp" />
     <ClCompile Include="src\utils\va.cpp" />
+    <ClCompile Include="TLSManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="src\syscall_callback.asm" />
