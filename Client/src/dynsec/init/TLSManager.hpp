@@ -7,7 +7,7 @@ namespace Dynsec::Init {
 	class TLSManager {
 	public:
 		bool RegisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback);
-		// static bool UnregisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback);
+		bool UnregisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback);
 
 	private:
 		bool m_IsCustomCallbackArray = false;
@@ -21,6 +21,7 @@ namespace Dynsec::Init {
 		PLDR_DATA_TABLE_ENTRY FindLdrTableForModule(HMODULE hModule);
 		PTLS_ENTRY FindTlsEntryForModule(HMODULE hModule);
 		SIZE_T GetTlsCallbackCount(PTLS_ENTRY entry);
+		SIZE_T FindCallbackIndex(PTLS_ENTRY entry, PIMAGE_TLS_CALLBACK callback);
 	};
 
 	TLSManager* GetTLSManager();

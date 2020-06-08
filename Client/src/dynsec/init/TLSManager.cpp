@@ -66,6 +66,34 @@ namespace Dynsec::Init {
 		return count;
 	}
 
+	SIZE_T TLSManager::FindCallbackIndex(PTLS_ENTRY entry, PIMAGE_TLS_CALLBACK callback)
+	{
+		PIMAGE_TLS_CALLBACK* pCallbackList = (PIMAGE_TLS_CALLBACK*)entry->TlsDirectory.AddressOfCallBacks;
+
+		if (!pCallbackList) {
+			return 0;
+		}
+
+		int count = 0;
+
+		PIMAGE_TLS_CALLBACK currentCallback = *pCallbackList;
+		while (true) {
+			currentCallback = *pCallbackList;
+
+			if (!*pCallbackList) 
+				break;
+			
+
+			if (currentCallback == callback)
+				return count+1;
+
+			++count;
+			++pCallbackList;
+		}
+
+		return count;
+	}
+
 	bool TLSManager::RegisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback) {
 		if (!m_IsCustomCallbackArray) {
 			Setup();
@@ -94,50 +122,63 @@ namespace Dynsec::Init {
 		return true;
 	}
 
-	//bool TLSManager::UnregisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback)
-	//{
-	//	if (!m_IsCustomCallbackArray)
-	//		Setup();
-	//	PTLS_ENTRY entry = FindTlsEntryForModule(module);
-	//	if (entry == nullptr)
-	//		return false;
-	//
-	//	SIZE_T nCallbacks = GetTlsCallbackCount(entry);
-	//	if (nCallbacks <= 0)
-	//		return false;
-	//
-	//	if (nCallbacks == 1) {
-	//		// Check if it's actually the callback we want to unregister
-	//		if (*(void**)entry->TlsDirectory.AddressOfCallBacks != pCallback)
-	//			return false;
-	//		entry->TlsDirectory.AddressOfCallBacks = 0;
-	//		return true;
-	//	}
-	//
-	//	uintptr_t* callbacks = *(uintptr_t**)entry->TlsDirectory.AddressOfCallBacks;
-	//
-	//	int iCallbackIndex = 0;
-	//	for (uintptr_t* ptr = callbacks; ptr; ptr++) {
-	//		if (*ptr == (uintptr_t)pCallback)
-	//			break;
-	//		++iCallbackIndex;
-	//	}
-	//
-	//	uintptr_t* callbacksMemory = new uintptr_t[nCallbacks - 1]{};
-	//	memcpy(callbacksMemory, (void*)entry->TlsDirectory.AddressOfCallBacks, nCallbacks * sizeof(uintptr_t));
-	//
-	//
-	//	if (m_IsCustomCallbackArray)
-	//		delete (void*)entry->TlsDirectory.AddressOfCallBacks;
-	//
-	//	callbacksMemory[nCallbacks] = (uintptr_t)pCallback;
-	//	callbacksMemory[nCallbacks + 1] = 0;
-	//
-	//	entry->TlsDirectory.AddressOfCallBacks = (uintptr_t)callbacksMemory;
-	//	m_IsCustomCallbackArray = true;
-	//
-	//	return true;
-	//}
+	bool TLSManager::UnregisterCallback(HMODULE module, PIMAGE_TLS_CALLBACK pCallback)
+	{
+		if (!m_IsCustomCallbackArray)
+			Setup();
+		PTLS_ENTRY entry = FindTlsEntryForModule(module);
+		if (entry == nullptr)
+			return false;
+
+		SIZE_T nCallbacks = GetTlsCallbackCount(entry);
+		if (nCallbacks <= 0)
+			return false;
+
+		if (nCallbacks == 1) {
+			// Check if it's actually the callback we want to unregister
+			if (*(void**)entry->TlsDirectory.AddressOfCallBacks != pCallback)
+				return false;
+			entry->TlsDirectory.AddressOfCallBacks = 0;
+			return true;
+		}
+
+		uintptr_t** callbacks = *(uintptr_t***)entry->TlsDirectory.AddressOfCallBacks;
+
+		int iCallbackIndex = FindCallbackIndex(entry, pCallback);
+
+
+
+		// We need an array of nCallbacks size because we need to keep in mind that 
+		// the array needs the last item to be 0. (last item(0) not counted in nCallbacks)
+		uintptr_t* callbacksMemory = new uintptr_t[nCallbacks]{};
+
+		if (iCallbackIndex == 1) {
+			memcpy(callbacksMemory, 
+				(void*)(entry->TlsDirectory.AddressOfCallBacks + sizeof(uintptr_t)), 
+				(nCallbacks - 1) * sizeof(uintptr_t));
+		}
+		else if (iCallbackIndex == nCallbacks) {
+			memcpy(callbacksMemory, 
+				(void*)entry->TlsDirectory.AddressOfCallBacks, 
+				(nCallbacks - 1) * sizeof(uintptr_t));
+		}
+		else {
+			memcpy(callbacksMemory, (void*)entry->TlsDirectory.AddressOfCallBacks, (iCallbackIndex - 1) * sizeof(uintptr_t));
+			memcpy(callbacksMemory + (iCallbackIndex - 1), (uintptr_t*)(entry->TlsDirectory.AddressOfCallBacks) + iCallbackIndex, (nCallbacks - iCallbackIndex) * sizeof(uintptr_t));
+		}
+
+		if (m_IsCustomCallbackArray)
+			delete (void*)entry->TlsDirectory.AddressOfCallBacks;
+
+		callbacksMemory[nCallbacks] = 0;
+
+		entry->TlsDirectory.AddressOfCallBacks = (uintptr_t)callbacksMemory;
+
+		m_IsCustomCallbackArray = true;
+
+		return true;
+	}
+
 
 	TLSManager* GetTLSManager() {
 		static TLSManager Instance;
