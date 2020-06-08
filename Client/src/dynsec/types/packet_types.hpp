@@ -15,7 +15,7 @@ namespace Dynsec::PacketTypes {
 		struct EncryptionKeys {
 			uint8_t m_FirstXorKey;						// XOR key used after the initial RC4
 			uint8_t m_SessionTokenKey[0x8];				// RC4 key for encrypting the session token
-			uint8_t m_FinalKey[0x8];							// Final RC4 key ran at the end
+			uint8_t m_FinalKey[0x8];					// Final RC4 key ran at the end
 		};
 		
 		struct UserIdentification {
@@ -40,4 +40,12 @@ namespace Dynsec::PacketTypes {
 			GameInformation m_GameInfo;					// Information on the game, could be modified though so shouldn't be trusted
 		};
 	}
+
+	namespace Response {
+		struct EncryptionKeys {
+			uint16_t m_Key1[0x10];
+			uint16_t m_Key2[0x10];
+			uint32_t m_Hash;
+		};
+	};
 }

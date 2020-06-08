@@ -7,6 +7,7 @@
 #include "dynsec/network/network_socket.hpp"
 #include "utils/secure/pointers.hpp"
 #include "dynsec/shellcode/shellcode.hpp"
+#include "global/variables.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
@@ -72,6 +73,10 @@ DWORD WINAPI MainThread(LPVOID) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+		Global::Vars::g_ModuleHandle = hModule;
+
+		srand((unsigned int)time(0));
+
 		if (!Utils::Secure::GetSyscalls()->Initialize()) {
 			printf("failed GetSyscalls()->Initialize\n");
 			return FALSE;
