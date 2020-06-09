@@ -2,6 +2,11 @@
 #include <iostream>
 #include <chrono>
 
+DWORD WINAPI Thread(LPVOID) {
+    printf("thread called\n");
+    return 0;
+}
+
 int main() {
     struct Callbacks {
 
@@ -20,7 +25,6 @@ int main() {
             delete Data;
         }
     }
-
 
     system("pause");
 }

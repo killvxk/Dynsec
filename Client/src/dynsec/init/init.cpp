@@ -24,6 +24,7 @@ namespace Dynsec::Init {
 #else
 		InstrumentationCallback = { 1, 0, hook_wrapper };
 #endif
+
 		Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &InstrumentationCallback, sizeof(InstrumentationCallback));
 
 		auto MemoryPages = Utils::Secure::GetMemoryPages();
