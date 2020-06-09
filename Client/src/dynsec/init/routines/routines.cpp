@@ -7,7 +7,7 @@
 namespace Dynsec::Routines {
 	void NTAPI ThreadLocalStorageCallback(PVOID DllHandle, DWORD dwReason, PVOID) {
 		if (dwReason == DLL_THREAD_ATTACH) {
-			printf("Thread created with DLL_THREAD_ATTACH at \n", Utils::GetThreadEntryPoint(GetCurrentThread()));
+			printf("Thread created with DLL_THREAD_ATTACH at %p\n", Utils::GetThreadEntryPoint(GetCurrentThread()));
 		}
 	}
 
