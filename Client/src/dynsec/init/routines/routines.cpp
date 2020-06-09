@@ -20,8 +20,7 @@ namespace Dynsec::Routines {
 
 		Global::Vars::g_ProcessingSyscallCallback[GetCurrentThread()] = true;
 
-		// handle syscall
-		printf("Syscall returning to %p with result %08x\n", rcx, rdx);
+		// handle syscall here
 
 		Global::Vars::g_ProcessingSyscallCallback[GetCurrentThread()] = false;
 	}
