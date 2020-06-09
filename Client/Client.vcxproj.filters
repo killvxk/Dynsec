@@ -66,6 +66,9 @@
     <ClCompile Include="src\dynsec\init\routines\routines.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\scans\signature_scan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\stdafx.hpp">
@@ -129,6 +132,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\dynsec\init\routines\routines.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\scans\signature_scan.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

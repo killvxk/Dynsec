@@ -180,6 +180,7 @@
     <ClInclude Include="src\utils\async.hpp" />
     <ClInclude Include="src\utils\caller.hpp" />
     <ClInclude Include="src\utils\math.hpp" />
+    <ClInclude Include="src\utils\scans\signature_scan.hpp" />
     <ClInclude Include="src\utils\secure\pointers.hpp" />
     <ClInclude Include="src\utils\secure\virtual.hpp" />
     <ClInclude Include="src\utils\secure\module.hpp" />
@@ -205,6 +206,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\utils\async.cpp" />
+    <ClCompile Include="src\utils\scans\signature_scan.cpp" />
     <ClCompile Include="src\utils\secure\module.cpp" />
     <ClCompile Include="src\utils\secure\pointers.cpp" />
     <ClCompile Include="src\utils\secure\syscall.cpp" />

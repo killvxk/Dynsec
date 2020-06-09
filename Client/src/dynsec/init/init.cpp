@@ -4,6 +4,7 @@
 #include "global/variables.hpp"
 #include "utils/secure/syscall.hpp"
 #include "utils/secure/virtual.hpp"
+#include "utils/scans/signature_scan.hpp"
 
 extern "C" void __fastcall hook_wrapper(VOID);
 

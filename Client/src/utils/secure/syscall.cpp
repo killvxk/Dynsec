@@ -57,6 +57,7 @@ namespace Utils::Secure {
 		// TODO: Syscall shellcode for each windows versions
 
 #ifdef _WIN64
+		// 4C 8B D1 B8 99 00 00 00 0F 05 C3
 		const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
 		uint8_t ShellcodeIndexOffset = 4;
 		uint8_t ShellcodeSize = 11;
@@ -109,6 +110,7 @@ namespace Utils::Secure {
 		m_Functions[_NtSetInformationProcess].second = GetSyscallIndex("NtSetInformationProcess", m_NtdllDisk);
 		m_Functions[_NtCreateThreadEx].second = GetSyscallIndex("NtCreateThreadEx", m_NtdllDisk);
 		m_Functions[_NtQueryInformationThread].second = GetSyscallIndex("NtQueryInformationThread", m_NtdllDisk);
+		m_Functions[_NtReadVirtualMemory].second = GetSyscallIndex("NtReadVirtualMemory", m_NtdllDisk);
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
@@ -125,6 +127,10 @@ namespace Utils::Secure {
 		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)EncodePtr(m_Functions[_NtAllocateVirtualMemory].first);
 
 		// now that the above syscall is resolved, we can use the secure ptrs
+		m_Functions[_NtReadVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+		if (!CheckAllocation(m_Functions[_NtReadVirtualMemory].first)) return false;
+		SetupAllocation(m_Functions[_NtReadVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
+
 		m_Functions[_NtFreeVirtualMemory].first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
 		if (!CheckAllocation(m_Functions[_NtFreeVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtFreeVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
@@ -322,6 +328,20 @@ namespace Utils::Secure {
 		EncryptAllocation(Address);
 
 		m_Mutexs[_NtQueryInformationThread].unlock();
+		return Return;
+	}
+
+	NTSTATUS Syscalls::NtReadVirtualMemory(HANDLE ProcessHandle, PVOID BaseAddress, PVOID Buffer, ULONG NumberOfBytesToRead, PULONG NumberOfBytesReaded) {
+		NTSTATUS Return = 0;
+
+		m_Mutexs[_NtReadVirtualMemory].lock();
+		CryptedAllocItem* Address = (CryptedAllocItem*)DecodePtr(m_Functions[_NtReadVirtualMemory].first);
+
+		DecryptAllocation(Address);
+		Return = Utils::Caller::Call<NTSTATUS>((uint64_t)&Address->m_ShellCode, ProcessHandle, BaseAddress, Buffer, NumberOfBytesToRead, NumberOfBytesReaded);
+		EncryptAllocation(Address);
+
+		m_Mutexs[_NtReadVirtualMemory].unlock();
 		return Return;
 	}
 

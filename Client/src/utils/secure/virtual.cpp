@@ -2,6 +2,7 @@
 #include "syscall.hpp"
 #include "utils/caller.hpp"
 #include "utils/structs.hpp"
+
 namespace Utils::Secure {
 	LPVOID VirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
 		LPVOID Address = lpAddress;
@@ -96,6 +97,15 @@ namespace Utils::Secure {
 		}
 
 		return (HANDLE)INVALID_HANDLE_VALUE; 
+	}
+
+	BOOL ReadProcessMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPVOID lpBuffer, ULONG nSize, PULONG lpNumberOfBytesRead) {
+		NTSTATUS Status = GetSyscalls()->NtReadVirtualMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
+		if ((Status & 0x80000000) == 0) {
+			return TRUE;
+		}
+
+		return FALSE;
 	}
 
 	std::vector<MEMORY_BASIC_INFORMATION> GetMemoryPages() {
