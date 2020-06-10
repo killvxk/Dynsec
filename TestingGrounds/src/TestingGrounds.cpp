@@ -12,7 +12,9 @@ int main() {
 
     };
 
-    HMODULE Dynsec = LoadLibraryA("Client.dll");
+    printf("loading...\n");
+	HMODULE Dynsec = LoadLibraryA("Client.dll");
+	printf("loaded\n");
     if (Dynsec) {
         printf("Dynsec client: %llx\n", Dynsec);
         FARPROC Initialize = GetProcAddress(Dynsec, "InitializeClient");

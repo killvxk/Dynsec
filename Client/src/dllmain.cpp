@@ -4,11 +4,12 @@
 #include "utils/secure/virtual.hpp"
 #include "global/variables.hpp"
 #include "utils/utils.hpp"
+#include "utils/threads/thread_pool.hpp"
 
 extern "C" {
 	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
 		// caller checks here
-		return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::Callbacks*>(pDynsecData));
+		return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::GameDataInit*>(pDynsecData));
 	}
 }
 
@@ -22,9 +23,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			return FALSE;
 		}
 
-		Utils::Secure::CreateThread(0, (LPTHREAD_START_ROUTINE)Dynsec::Init::Initialize, 0, 0, 0);
-	}
-	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
+		Utils::Threads::GetThreadPool()->CreateThread(0x1337, Dynsec::Init::Initialize, nullptr);
+	} else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
 		Utils::Secure::GetSyscalls()->Clean();
 	}
 

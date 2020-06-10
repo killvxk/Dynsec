@@ -3,6 +3,6 @@
 #include "dynsec/types/init_types.hpp"
 
 namespace Dynsec::Init {
-	void Initialize();
-	void InitializeClient(Dynsec::InitTypes::Callbacks* pCallbacks);
+	void Initialize(LPVOID lpParam);
+	void InitializeClient(Dynsec::InitTypes::GameDataInit* InitData);
 }

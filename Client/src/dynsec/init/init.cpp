@@ -4,17 +4,20 @@
 #include "global/variables.hpp"
 #include "utils/secure/syscall.hpp"
 #include "utils/secure/virtual.hpp"
-#include "utils/scans/signature_scan.hpp"
+#include "utils/threads/thread_pool.hpp"
+#include "utils/secure/pointers.hpp"
 
 extern "C" void __fastcall hook_wrapper(VOID);
 
 namespace Dynsec::Init {
-	void InitializeClient(Dynsec::InitTypes::Callbacks* pCallbacks) {
+	void InitializeClient(Dynsec::InitTypes::GameDataInit* InitData) {
 		// initialized from client
-		printf("InitializeClient\n");
+		Global::Vars::g_GameDataInit = (Dynsec::InitTypes::GameDataInit*)EncodePtr(InitData);
+
+		printf("[Game] -> InitializeClient (%llx)\n", InitData);
 	}
 
-	void Initialize() {
+	void Initialize(LPVOID lpParam) {
 		// Initialize our hacky TLS Callback
 		GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, Dynsec::Routines::ThreadLocalStorageCallback);
 
@@ -32,5 +35,8 @@ namespace Dynsec::Init {
 		for (auto& Page : MemoryPages) {
 			printf("Page: %llx -> %llx\n", Page.BaseAddress, (uint64_t)Page.BaseAddress + Page.RegionSize);
 		}
+
+		// Close this thread (tmp)
+		Utils::Threads::GetThreadPool()->CloseThread(0x1337);
 	}
 }

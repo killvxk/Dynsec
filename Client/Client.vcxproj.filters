@@ -48,9 +48,6 @@
     <ClCompile Include="src\dynsec\shellcode\shellcode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\utils\async.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\dynsec\crypto\crypto.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -67,6 +64,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\scans\signature_scan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\threads\async.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\threads\thread_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -116,9 +119,6 @@
     <ClInclude Include="src\dynsec\shellcode\shellcode.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\utils\async.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\dynsec\crypto\crypto.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -135,6 +135,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\scans\signature_scan.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\threads\async.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\threads\thread_pool.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
