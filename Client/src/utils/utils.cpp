@@ -4,6 +4,9 @@
 #include "utils/secure/virtual.hpp"
 #include "utils/structs.hpp"
 #include "utils/secure/module.hpp"
+#include "dynsec/crypto/crypto.hpp"
+#include <sstream>
+#include <iomanip>
 
 namespace Utils {
 	std::string CreateRandomString(int length) {
@@ -18,6 +21,23 @@ namespace Utils {
 		std::string str(length, 0);
 		std::generate_n(str.begin(), length, randchar);
 		return str;
+	}
+
+	std::string ConvertBytesToString(uint8_t* data, uint32_t length, bool space) {
+		std::stringstream str;
+		str.setf(std::ios_base::hex, std::ios::basefield);
+		str.setf(std::ios_base::uppercase);
+		str.fill('0');
+
+		for (uint32_t i = 0; i < length; ++i) {
+			str << std::setw(2) << (unsigned short)data[i];
+
+			if (space && i != length - 1) {
+				str << " ";
+			}
+		}
+
+		return str.str();
 	}
 
 	std::vector<uint8_t> ConvertNumberToBytes(uint32_t param) {
@@ -39,5 +59,17 @@ namespace Utils {
 		}
 
 		return dwThreadStartAddr;
+	}
+
+	void ReplaceString(std::string& str, std::string from, std::string to) {
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+			size_t end_pos = start_pos + from.length();
+			while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+				str.replace(start_pos, from.length(), to);
+				start_pos += to.length(); // ...
+			}
+			start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+		}
 	}
 }

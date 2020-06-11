@@ -143,6 +143,9 @@
     <ClInclude Include="src\utils\threads\thread_pool.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\dynsec\types\routine_types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="src\syscall_callback.asm">

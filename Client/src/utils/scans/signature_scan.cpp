@@ -46,7 +46,7 @@ namespace Utils::Scans {
 
 			for (uint64_t i = Start; i < End; i++) {
 				uint8_t* Current = (uint8_t*)i;
-				bool Found = false;
+				bool Found = true;
 
 				for (std::size_t ps = 0; ps < PatternBytes.size(); ps++) {
 					if (!PatternBytes[ps].m_Ignore && Current[ps] != PatternBytes[ps].m_Data) {

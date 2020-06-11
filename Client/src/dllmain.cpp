@@ -23,7 +23,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			return FALSE;
 		}
 
-		Utils::Threads::GetThreadPool()->CreateThread(0x1337, Dynsec::Init::Initialize, nullptr);
+		Utils::Threads::GetThreadPool()->CreateThread(0xBEEF, Dynsec::Init::Initialize, nullptr);
 	} else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
 		Utils::Secure::GetSyscalls()->Clean();
 	}

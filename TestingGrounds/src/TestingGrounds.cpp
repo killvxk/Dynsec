@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <iostream>
 #include <chrono>
+#include <iostream>
 
 DWORD WINAPI Thread(LPVOID) {
     printf("thread called\n");
@@ -28,5 +29,5 @@ int main() {
         }
     }
 
-    system("pause");
+    std::cin.get();
 }
