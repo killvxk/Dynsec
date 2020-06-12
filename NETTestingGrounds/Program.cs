@@ -13,7 +13,7 @@ namespace NETTestingGrounds
         static void Main(string[] args)
         {
             Log("Initializing...!");
-            DynSecAntiCheat.Initialize(new Callbacks());
+            DynSecAntiCheat.InitializeClient(new Callbacks());
             Log("DynSec loaded in C# !");
 
             Console.ReadLine();
