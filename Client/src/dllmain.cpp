@@ -7,7 +7,7 @@
 #include "utils/threads/thread_pool.hpp"
 
 extern "C" {
-	__declspec(dllexport) void InitializeClient(void* pDynsecData) {
+	__declspec(dllexport) void __stdcall InitializeClient(void* pDynsecData) {
 		// caller checks here
 		return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::GameDataInit*>(pDynsecData));
 	}
