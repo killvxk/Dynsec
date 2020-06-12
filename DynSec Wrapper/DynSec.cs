@@ -11,11 +11,11 @@ namespace DynSec_Wrapper
     public class DynSecAntiCheat
     {
         [DllImport("Client.dll", EntryPoint="InitializeClient", CallingConvention = CallingConvention.StdCall)]
-        private static extern void InternalInitialize(ref Callbacks callbacks);
+        private static extern void _InitializeClient(ref Callbacks callbacks);
 
-        public static void Initialize(Callbacks callbacks)
+        public static void InitializeClient(Callbacks callbacks)
         {
-            InternalInitialize(ref callbacks);
+            _InitializeClient(ref callbacks);
         }
     }
 }
