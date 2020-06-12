@@ -9,7 +9,6 @@ namespace NETTestingGrounds
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(msg, param);
             Console.ResetColor();
-            Console.Write("huh");
 
         }
         static void Main(string[] args)
