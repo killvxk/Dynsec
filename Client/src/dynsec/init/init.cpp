@@ -33,7 +33,7 @@ namespace Dynsec::Init {
 		// Utils::Secure::GetSyscalls()->NtSetInformationProcess(GetCurrentProcess(), PROCESS_INSTRUMENTATION_CALLBACK, &InstrumentationCallback, sizeof(InstrumentationCallback));
 
 		// Temp add a sig
-		Global::Vars::g_MemorySignatures.push_back({ 0x1, { 0x5B, 0x47, 0x61, 0x6D, 0x65, 0x5D, 0x20, 0x2D, 0x3E, 0x20, 0x49, 0x6E, 0x69, 0x74, 0x69, 0x61, 0x6C, 0x69, 0x7A, 0x65, 0x43, 0x6C, 0x69, 0x65 } });
+		Global::Vars::g_MemorySignatures.push_back({ 0x1, false, "[Game] -> InitializeClie" });
 
 		// Create the memory scan thread
 		Utils::Threads::GetThreadPool()->CreateThread(0xDEAD, Dynsec::Routines::MemoryScanRoutine, nullptr);

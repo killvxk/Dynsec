@@ -13,6 +13,7 @@ namespace Dynsec::Routines {
 			// Report
 		}
 
+		auto start = std::chrono::high_resolution_clock::now();
 		for (auto& Page : MemoryPages) {
 			// Code sections, etc
 			bool ExecutableMemory =
@@ -26,17 +27,16 @@ namespace Dynsec::Routines {
 				(Page.Protect == PAGE_READONLY
 					|| Page.Protect == PAGE_READWRITE);
 
+			// Skip pages that aren't executable and aren't read/write
+			if (!ExecutableMemory && !StorageMemory) continue;
+
 			for (auto& Signature : Global::Vars::g_MemorySignatures) {
-				if (!ExecutableMemory && !StorageMemory) continue;
-
 				// TODO: Signature encryption (lightweight RC4)
-				if (Signature.m_Signature.size()) {
-					std::string SignatureStr = Utils::ConvertBytesToString(Signature.m_Signature.data(), Signature.m_Signature.size(), true);
-					if (SignatureStr.size()) {
-						// Replace wildcard bytes
-						Utils::ReplaceString(SignatureStr, "3F", "?");
-
-						uint64_t ScanResult = Utils::Scans::PatternScan((uint64_t)Page.BaseAddress, (uint64_t)Page.BaseAddress + Page.RegionSize, SignatureStr.c_str());
+				if ((Signature.m_Executable && ExecutableMemory)
+					|| (!Signature.m_Executable && StorageMemory)) {
+					// Process
+					if (Signature.m_Signature.size()) {
+						uint64_t ScanResult = Utils::Scans::PatternScan((uint64_t)Page.BaseAddress, (uint64_t)Page.BaseAddress + Page.RegionSize, Signature.m_Signature.c_str());
 						if (ScanResult && ScanResult != (uint64_t)Signature.m_Signature.data()) {
 							printf("Scan %x found at %llx\n", Signature.m_Identifier, ScanResult);
 						}
@@ -44,6 +44,10 @@ namespace Dynsec::Routines {
 				}
 			}
 		}
+
+		auto elapsed = std::chrono::high_resolution_clock::now() - start;
+		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+		printf("%i microseconds to scan all memory pages for 1 signature\n", microseconds);
 
 		// Once a minute
 		Sleep(60000);
