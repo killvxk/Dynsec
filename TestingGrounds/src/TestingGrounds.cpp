@@ -9,9 +9,12 @@ DWORD WINAPI Thread(LPVOID) {
 }
 
 int main() {
+	// We want it packed this way to match C#
+#pragma pack(push, 1)
     struct Callbacks {
 
     };
+#pragma pack(pop)
 
     printf("loading...\n");
 	HMODULE Dynsec = LoadLibraryA("Client.dll");
@@ -22,7 +25,7 @@ int main() {
         if (Initialize) {
             printf("InitializeClient: %llx\n", Initialize);
             Callbacks* Data = new Callbacks();
-            ((void(*)(Callbacks*))Initialize)(Data);
+            ((void(__stdcall*)(Callbacks*))Initialize)(Data);
 
             // temp
             delete Data;
