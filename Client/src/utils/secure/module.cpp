@@ -1,32 +1,19 @@
 #include "module.hpp"
-#include "../structs.hpp"
 
 namespace Utils::Secure {
 #define RVA2VA(type, base, rva) (type)((uint64_t)base + rva)
 #define VA2RVA(type, base, va) (type)((uint64_t)va - (uint64_t)base)
 
 	HMODULE GetModuleHandle(const wchar_t* moduleName) {
-		if (ProcessEnvironmentBlock) {
-			PPEB_LDR_DATA Ldr = ProcessEnvironmentBlock->Ldr;
-			if (Ldr) {
-				PLIST_ENTRY CurrentEntry = Ldr->InLoadOrderModuleList.Flink;
-				if (CurrentEntry) {
-					while (CurrentEntry != &Ldr->InLoadOrderModuleList && CurrentEntry != nullptr) {
-						PLDR_DATA_TABLE_ENTRY Current = CONTAINING_RECORD(CurrentEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
-						if (Current) {
-							if (moduleName == nullptr) {
-								return (HMODULE)Current->DllBase;
-							}
+		auto MappedModules = GetMappedModules();
+		for (auto Module : MappedModules) {
+			if (moduleName == nullptr) {
+				return (HMODULE)Module->DllBase;
+			}
 
-							if (Current->BaseDllName.Buffer && Current->BaseDllName.Length) {
-								if (!wcscmp(Current->BaseDllName.Buffer, moduleName)) {
-									return (HMODULE)Current->DllBase;
-								}
-							}
-						}
-
-						CurrentEntry = CurrentEntry->Flink;
-					}
+			if (Module->BaseDllName.Buffer && Module->BaseDllName.Length) {
+				if (!wcscmp(Module->BaseDllName.Buffer, moduleName)) {
+					return (HMODULE)Module->DllBase;
 				}
 			}
 		}
@@ -122,5 +109,45 @@ namespace Utils::Secure {
 		}
 
 		return nullptr;
+	}
+
+	std::vector<PIMAGE_SECTION_HEADER> GetModuleSections(HMODULE hModule) {
+		std::vector<PIMAGE_SECTION_HEADER> Headers;
+
+		PIMAGE_NT_HEADERS NtHeader = RVA2VA(PIMAGE_NT_HEADERS, hModule, ((PIMAGE_DOS_HEADER)hModule)->e_lfanew);
+		if (!NtHeader) {
+			return Headers;
+		}
+
+		PIMAGE_SECTION_HEADER SectionHeader = IMAGE_FIRST_SECTION(NtHeader);
+		for (int i = 0; i < NtHeader->FileHeader.NumberOfSections; i++) {
+			Headers.push_back(SectionHeader);
+			SectionHeader++;
+		}
+
+		return Headers;
+	}
+
+	std::vector<PLDR_DATA_TABLE_ENTRY> GetMappedModules() {
+		std::vector<PLDR_DATA_TABLE_ENTRY> Modules;
+
+		if (ProcessEnvironmentBlock) {
+			PPEB_LDR_DATA Ldr = ProcessEnvironmentBlock->Ldr;
+			if (Ldr) {
+				PLIST_ENTRY CurrentEntry = Ldr->InLoadOrderModuleList.Flink;
+				if (CurrentEntry) {
+					while (CurrentEntry != &Ldr->InLoadOrderModuleList && CurrentEntry != nullptr) {
+						PLDR_DATA_TABLE_ENTRY Current = CONTAINING_RECORD(CurrentEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+						if (Current) {
+							Modules.push_back(Current);
+						}
+
+						CurrentEntry = CurrentEntry->Flink;
+					}
+				}
+			}
+		}
+
+		return Modules;
 	}
 }

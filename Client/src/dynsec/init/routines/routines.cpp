@@ -3,6 +3,7 @@
 #include "utils/utils.hpp"
 #include "utils/scans/signature_scan.hpp"
 #include "utils/secure/virtual.hpp"
+#include "utils/secure/module.hpp"
 
 namespace Dynsec::Routines {
 	void MemoryScanRoutine(LPVOID lpParam) {
@@ -51,6 +52,34 @@ namespace Dynsec::Routines {
 
 		// Once a minute
 		Sleep(60000);
+	}
+
+	void ExploitableModuleScanRoutine(LPVOID lpParam) {
+		auto MappedModules = Utils::Secure::GetMappedModules();
+
+		for (auto& Module : MappedModules) {
+			if (Module) {
+				HMODULE ModuleHandle = (HMODULE)(Module->DllBase);
+				if (ModuleHandle != Utils::Secure::GetModuleHandle(0)) {
+					auto ModuleSections = Utils::Secure::GetModuleSections(ModuleHandle);
+					for (auto& Section : ModuleSections) {
+						if (Section) {
+							if (Section->Characteristics & IMAGE_SCN_MEM_EXECUTE
+								&& Section->Characteristics & IMAGE_SCN_MEM_WRITE) {
+								if (Module->BaseDllName.Buffer) {
+									printf("%ws is executable and writable\n", Module->BaseDllName.Buffer);
+								}
+
+								// Report name, timestamp, crc hash of section
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Once every 5 minutes
+		Sleep(60000 * 5);
 	}
 
 	void NTAPI ThreadLocalStorageCallback(PVOID DllHandle, DWORD dwReason, PVOID) {

@@ -41,6 +41,9 @@ namespace Dynsec::Init {
 		// Create the memory scan thread
 		Utils::Threads::GetThreadPool()->CreateThread(0xDEAD, Dynsec::Routines::MemoryScanRoutine, nullptr);
 
+		// Create the exploitable module scan thread
+		Utils::Threads::GetThreadPool()->CreateThread(0xC0DE, Dynsec::Routines::ExploitableModuleScanRoutine, nullptr);
+
 		// Close this thread (tmp)
 		Utils::Threads::GetThreadPool()->CloseThread(0xBEEF);
 	}
