@@ -7,6 +7,7 @@
 #include "utils/threads/thread_pool.hpp"
 #include "utils/secure/pointers.hpp"
 #include "utils/utils.hpp"
+#include "dynsec/crypto/crypto.hpp"
 
 extern "C" void __fastcall hook_wrapper(VOID);
 

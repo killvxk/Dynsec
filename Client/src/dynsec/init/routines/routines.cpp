@@ -4,6 +4,7 @@
 #include "utils/scans/signature_scan.hpp"
 #include "utils/secure/virtual.hpp"
 #include "utils/secure/module.hpp"
+#include "dynsec/crypto/crypto.hpp"
 
 namespace Dynsec::Routines {
 	void MemoryScanRoutine(LPVOID lpParam) {
@@ -67,7 +68,8 @@ namespace Dynsec::Routines {
 							if (Section->Characteristics & IMAGE_SCN_MEM_EXECUTE
 								&& Section->Characteristics & IMAGE_SCN_MEM_WRITE) {
 								if (Module->BaseDllName.Buffer) {
-									printf("%ws is executable and writable\n", Module->BaseDllName.Buffer);
+									auto SectionAddress = RVA2VA(uint64_t, ModuleHandle, Section->VirtualAddress);
+									printf("%ws is executable and writable (%X)\n", Module->BaseDllName.Buffer, Dynsec::Crypto::CRC32((uint8_t*)SectionAddress, Section->Misc.VirtualSize));
 								}
 
 								// Report name, timestamp, crc hash of section

@@ -1,9 +1,6 @@
 #include "module.hpp"
 
 namespace Utils::Secure {
-#define RVA2VA(type, base, rva) (type)((uint64_t)base + rva)
-#define VA2RVA(type, base, va) (type)((uint64_t)va - (uint64_t)base)
-
 	HMODULE GetModuleHandle(const wchar_t* moduleName) {
 		auto MappedModules = GetMappedModules();
 		for (auto Module : MappedModules) {
@@ -45,7 +42,7 @@ namespace Utils::Secure {
 		return (T)((uintptr_t)hMod + FindRawAddress(headers, va));
 	}
 
-	FARPROC GetProcAddressDisk(HMODULE hMod, const char* procName){
+	FARPROC GetProcAddressDisk(HMODULE hMod, const char* procName) {
 		PIMAGE_NT_HEADERS ntHeader = RVA2VA(PIMAGE_NT_HEADERS, hMod, ((PIMAGE_DOS_HEADER)hMod)->e_lfanew);
 		if (!ntHeader)
 			return nullptr;
@@ -53,7 +50,7 @@ namespace Utils::Secure {
 		PIMAGE_DATA_DIRECTORY dataDirectory = ntHeader->OptionalHeader.DataDirectory;
 
 		DWORD exportsVA = dataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-		
+
 		PIMAGE_EXPORT_DIRECTORY pExports = FindRawPointer<PIMAGE_EXPORT_DIRECTORY>(ntHeader, hMod, exportsVA);
 
 		if (pExports) {
@@ -67,9 +64,9 @@ namespace Utils::Secure {
 					const char* exportName = FindRawPointer<const char*>(ntHeader, hMod, names[i]);
 					if (exportName && !strcmp(exportName, procName)) {
 						uint32_t offset = functions[nameOrdinals[i]];
-						if (offset) 
+						if (offset)
 							return FindRawPointer<FARPROC>(ntHeader, hMod, offset);
-						
+
 					}
 				}
 			}

@@ -12,4 +12,5 @@ namespace Dynsec::Crypto {
 	void SHA512Init(SHA512State* pShaState);
 	void SHA512Update(SHA512State* pShaState, uint8_t* pbInp, uint32_t cbInp);
 	void SHA512Final(SHA512State* pShaState, uint8_t* pbOut, uint32_t cbOut);
+	uint32_t CRC32(uint8_t* pbInp, uint64_t cbInp);
 }
