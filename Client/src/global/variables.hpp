@@ -8,4 +8,5 @@ namespace Global::Vars {
 	extern std::unordered_map<HANDLE, bool> g_ProcessingSyscallCallback;
 	extern Dynsec::InitTypes::GameDataInit* g_GameDataInit;
 	extern std::vector<Dynsec::RoutineTypes::MemorySignature> g_MemorySignatures;
+	extern std::vector<Dynsec::RoutineTypes::ThreadEntrySignature> g_ThreadEntrySignatures;
 }

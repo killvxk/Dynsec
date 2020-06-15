@@ -55,7 +55,54 @@ namespace Dynsec::Routines {
 
 	void NTAPI ThreadLocalStorageCallback(PVOID DllHandle, DWORD dwReason, PVOID) {
 		if (dwReason == DLL_THREAD_ATTACH) {
-			printf("Thread created with DLL_THREAD_ATTACH at %p\n", Utils::GetThreadEntryPoint(GetCurrentThread()));
+			uint64_t ThreadEntryPoint = Utils::GetThreadEntryPoint(GetCurrentThread());
+			if (ThreadEntryPoint) {
+				printf("Thread created with DLL_THREAD_ATTACH at %p (%i)\n", ThreadEntryPoint, dwReason);
+
+				for (auto& Signature : Global::Vars::g_ThreadEntrySignatures) {
+					// TODO: Signature encryption (lightweight RC4)
+					if (Signature.m_Signature.size()) {
+						uint64_t PageSize = 0x100;
+
+						// Get shellcode page size
+						auto MemoryPages = Utils::Secure::GetMemoryPages();
+						for (auto& Page : MemoryPages) {
+							if (ThreadEntryPoint >= (uint64_t)Page.BaseAddress) {
+								if (ThreadEntryPoint <= ((uint64_t)Page.BaseAddress + Page.RegionSize)) {
+									// Inside this page
+									PageSize = Page.RegionSize;
+									break;
+								}
+							}
+						}
+
+						// Scan for signatures
+						uint64_t ScanResult = Utils::Scans::PatternScan(ThreadEntryPoint, ThreadEntryPoint + PageSize, Signature.m_Signature.c_str());
+						if (ScanResult && ScanResult != (uint64_t)Signature.m_Signature.data()) {
+							// Report
+							printf("Thread scan %x found at %llx, blocking\n", Signature.m_Identifier, ScanResult);
+							ExitThread(0);
+							return;
+						}
+
+						// Resolve LoadLibrary jumps
+						uint8_t JumpAsm[] = { 0x48, 0xFF, 0x25 };
+						if (!memcmp((void*)ThreadEntryPoint, JumpAsm, 3)) {
+							uint64_t JumpAddress = (uint64_t)(*(int*)(ThreadEntryPoint + 3) + ThreadEntryPoint + 7);
+							if (JumpAddress) {
+								JumpAddress = *(uint64_t*)(JumpAddress);
+								if (JumpAddress == (uint64_t)GetProcAddress(GetModuleHandleA("KERNELBASE.dll"), "LoadLibraryW")) {
+									// Using LoadLibraryW
+									printf("LoadLibraryW being used to inject, blocking for now\n");
+									ExitThread(0);
+
+									// TODO: Find where the string is thats loading the dll
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
