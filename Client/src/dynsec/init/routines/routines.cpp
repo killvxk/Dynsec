@@ -59,23 +59,10 @@ namespace Dynsec::Routines {
 			if (ThreadEntryPoint) {
 				printf("Thread created with DLL_THREAD_ATTACH at %p (%i)\n", ThreadEntryPoint, dwReason);
 
+				uint64_t PageSize = 0x500;
 				for (auto& Signature : Global::Vars::g_ThreadEntrySignatures) {
 					// TODO: Signature encryption (lightweight RC4)
 					if (Signature.m_Signature.size()) {
-						uint64_t PageSize = 0x100;
-
-						// Get shellcode page size
-						auto MemoryPages = Utils::Secure::GetMemoryPages();
-						for (auto& Page : MemoryPages) {
-							if (ThreadEntryPoint >= (uint64_t)Page.BaseAddress) {
-								if (ThreadEntryPoint <= ((uint64_t)Page.BaseAddress + Page.RegionSize)) {
-									// Inside this page
-									PageSize = Page.RegionSize;
-									break;
-								}
-							}
-						}
-
 						// Scan for signatures
 						uint64_t ScanResult = Utils::Scans::PatternScan(ThreadEntryPoint, ThreadEntryPoint + PageSize, Signature.m_Signature.c_str());
 						if (ScanResult && ScanResult != (uint64_t)Signature.m_Signature.data()) {
