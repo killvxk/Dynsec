@@ -19,6 +19,8 @@
 #undef GetCurrentProcess
 #define GetCurrentProcess() (HANDLE)-1
 
+#define OneMinute 60000
+
 #ifdef _WIN64
 #define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
 #else

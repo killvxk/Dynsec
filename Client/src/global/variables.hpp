@@ -9,4 +9,5 @@ namespace Global::Vars {
 	extern Dynsec::InitTypes::GameDataInit* g_GameDataInit;
 	extern std::vector<Dynsec::RoutineTypes::MemorySignature> g_MemorySignatures;
 	extern std::vector<Dynsec::RoutineTypes::ThreadEntrySignature> g_ThreadEntrySignatures;
+	extern std::vector<std::string> g_WindowTitleSignatures;
 }

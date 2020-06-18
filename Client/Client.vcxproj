@@ -177,6 +177,7 @@
     <ClInclude Include="src\dynsec\types\routine_types.hpp" />
     <ClInclude Include="src\global\variables.hpp" />
     <ClInclude Include="src\stdafx.hpp" />
+    <ClInclude Include="src\utils\memory\memory.hpp" />
     <ClInclude Include="src\utils\threads\async.hpp" />
     <ClInclude Include="src\utils\caller.hpp" />
     <ClInclude Include="src\utils\math.hpp" />
@@ -206,6 +207,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\utils\memory\memory.cpp" />
     <ClCompile Include="src\utils\threads\async.cpp" />
     <ClCompile Include="src\utils\scans\signature_scan.cpp" />
     <ClCompile Include="src\utils\secure\module.cpp" />

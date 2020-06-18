@@ -52,7 +52,7 @@ namespace Dynsec::Routines {
 		printf("%i microseconds to scan all memory pages for 1 signature\n", microseconds);
 
 		// Once a minute
-		Sleep(60000);
+		Sleep(OneMinute);
 	}
 
 	void ExploitableModuleScanRoutine(LPVOID lpParam) {
@@ -81,7 +81,7 @@ namespace Dynsec::Routines {
 		}
 
 		// Once every 5 minutes
-		Sleep(60000 * 5);
+		Sleep(OneMinute * 5);
 	}
 
 	void NTAPI ThreadLocalStorageCallback(PVOID DllHandle, DWORD dwReason, PVOID) {
@@ -113,15 +113,22 @@ namespace Dynsec::Routines {
 									// Using LoadLibraryW
 									printf("LoadLibraryW being used to inject, blocking for now\n");
 									ExitThread(0);
-
+									return;
 									// TODO: Find where the string is thats loading the dll
 								}
+
+								printf("JumpAddress: %llx\n", JumpAddress);
 							}
 						}
 					}
 				}
 			}
 		}
+	}
+
+	void WindowScanRoutine(LPVOID lpParam) {
+
+		Sleep(OneMinute);
 	}
 
 	extern "C" void __fastcall hook_routine(uintptr_t rcx /*return addr*/, uintptr_t rdx /*return result*/) {

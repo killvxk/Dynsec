@@ -2,12 +2,20 @@
 #include "global/variables.hpp"
 #include "utils/secure/syscall.hpp"
 #include "utils/secure/virtual.hpp"
+#include "utils/scans/signature_scan.hpp"
+#include "utils/memory/memory.hpp"
+#include <psapi.h>
 
 namespace Dynsec::Init {
 	void TLSManager::Setup() {
-		// TODO: Sig scan these
-		m_pInLoadOrderModuleList = (void*)((uintptr_t)Utils::Secure::GetModuleHandle(L"ntdll.dll") + 0x1653D0);
-		m_pLdrpTlsList = (void*)((uintptr_t)Utils::Secure::GetModuleHandle(L"ntdll.dll") + 0x15F520);
+		MODULEINFO ModuleInfo;
+		GetModuleInformation(GetCurrentProcess(), Utils::Secure::GetModuleHandle(L"ntdll.dll"), &ModuleInfo, sizeof(ModuleInfo));
+
+		uint64_t StartScan = (uint64_t)ModuleInfo.lpBaseOfDll;
+		uint64_t EndScan = StartScan + ModuleInfo.SizeOfImage;
+
+		m_pLdrpTlsList = (void*)Utils::Memory::GetAddressFromInstruction(Utils::Scans::PatternScan(StartScan, EndScan, "48 8b 05 ? ? ? ? 48 8d 15 ? ? ? ? EB"));
+		m_pInLoadOrderModuleList = (void*)Utils::Memory::GetAddressFromInstruction(Utils::Scans::PatternScan(StartScan, EndScan, "48 8b 3d ? ? ? ? 48 8d 05 ? ? ? ? 48 3b f8 74 ? 4c 8d ? ? ? 49"));
 
 		m_LdrpTlsList = *(PTLS_ENTRY*)m_pLdrpTlsList;
 		m_pInLoadOrderModuleList = *(PLIST_ENTRY*)m_pInLoadOrderModuleList;
@@ -56,7 +64,7 @@ namespace Dynsec::Init {
 		while (true) {
 			currentCallback = *pCallbackList;
 
-			if (!*pCallbackList) {
+			if (!currentCallback) {
 				break;
 			}
 
@@ -100,7 +108,7 @@ namespace Dynsec::Init {
 		}
 
 		PTLS_ENTRY entry = FindTlsEntryForModule(module);
-		if (entry == nullptr) {
+		if (!entry) {
 			return false;
 		}
 

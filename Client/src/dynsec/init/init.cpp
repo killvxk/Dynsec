@@ -39,6 +39,9 @@ namespace Dynsec::Init {
 		// Temp add a thread shellcode (ExtremeInjector -> ManualMap)
 		Global::Vars::g_ThreadEntrySignatures.push_back({ 0x1, "48 89 4C 24 08 48 89 54 24 10 4C 89 44 24 18 4C 89 4C 24 20 48 83 EC 28 48 33 C9 48 BA ? ? ? ? ? ? ? ? 4C 8D 05 ? ? ? ? 48 B8 ? ? ? ? ? ? ? ? FF D0" });
 
+		// Temp add a window title
+		Global::Vars::g_WindowTitleSignatures.push_back("Chrome");
+
 		// Create the memory scan thread
 		Utils::Threads::GetThreadPool()->CreateThread(0xDEAD, Dynsec::Routines::MemoryScanRoutine, nullptr);
 

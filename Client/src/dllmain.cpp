@@ -6,11 +6,9 @@
 #include "utils/utils.hpp"
 #include "utils/threads/thread_pool.hpp"
 
-extern "C" {
-	__declspec(dllexport) void __stdcall InitializeClient(void* pDynsecData) {
-		// caller checks here
-		return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::GameDataInit*>(pDynsecData));
-	}
+extern "C" __declspec(dllexport) void __stdcall InitializeClient(void* pDynsecData) {
+	// caller checks here
+	return Dynsec::Init::InitializeClient(static_cast<Dynsec::InitTypes::GameDataInit*>(pDynsecData));
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
