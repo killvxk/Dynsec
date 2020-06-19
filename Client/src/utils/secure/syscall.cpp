@@ -109,7 +109,7 @@ namespace Utils::Secure {
 
 		// Allocate the syscall invoke memory
 		int BlockSize = ShellcodeSize + sizeof(CryptedAllocItem) - 1;
-		CryptedAllocItem* SyscallMemory = (CryptedAllocItem*)VirtualAlloc(0, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		CryptedAllocItem* SyscallMemory = (CryptedAllocItem*)VirtualAlloc(0, BlockSize * m_Functions.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
 		m_Functions[_NtAllocateVirtualMemory].first = &SyscallMemory[_NtAllocateVirtualMemory * BlockSize];
 		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
