@@ -127,6 +127,63 @@ namespace Dynsec::Routines {
 	}
 
 	void WindowScanRoutine(LPVOID lpParam) {
+		// TODO: Reverse EnumWindows
+
+		std::vector<Dynsec::RoutineTypes::WindowInfo> Windows;
+		BOOL SuccessfullyEnumerated = EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+			// Get window name
+			char WindowName[100];
+			int WindowNameLength = GetWindowTextA(hwnd, WindowName, 100);
+
+			LONG WindowStyle = GetWindowLong(hwnd, GWL_STYLE);
+			LONG WindowExtendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+
+			DWORD OwningProcessID = 0;
+			GetWindowThreadProcessId(hwnd, &OwningProcessID);
+
+			std::vector<Dynsec::RoutineTypes::WindowInfo>& pWindows = *reinterpret_cast<std::vector<Dynsec::RoutineTypes::WindowInfo>*>(lParam);
+			pWindows.push_back({ WindowName, WindowStyle, WindowExtendedStyle, GetCurrentProcessId() == OwningProcessID });
+			return TRUE;
+		}, (LPARAM)&Windows);
+
+		std::vector<Dynsec::RoutineTypes::WindowInfo> ReportWindows;
+
+		// Iterate without checking if it was successful, just in case
+		for (auto& Window : Windows) {
+			// Check for matching names
+
+			bool MatchingName = false;
+			if (!Window.m_Name.empty()) {
+				for (auto& Name : Global::Vars::g_WindowTitleSignatures) {
+					if (strstr(Name.c_str(), Window.m_Name.c_str())) {
+						MatchingName = true;
+						break;
+					}
+				}
+			}
+
+			// If it matches any conds for styles, report here
+			if (MatchingName) {
+				auto Exists = std::find_if(ReportWindows.begin(), ReportWindows.end(), [&](Dynsec::RoutineTypes::WindowInfo& Info) {
+					return !Info.m_Name.compare(Window.m_Name);
+				});
+
+				if (Exists == ReportWindows.end()) {
+					ReportWindows.push_back(Window);
+				}
+			}
+		}
+
+		printf("[REPORT] Reporting %i windows\n", ReportWindows.size());
+		for (auto& Window : ReportWindows) {
+			// Report
+			printf("[REPORT] Reporting window -> %s\n", Window.m_Name.c_str());
+		}
+
+		if (!SuccessfullyEnumerated || Windows.size() < 1) {
+			// Report GetLastError
+			printf("[REPORT] Window iteration failed (lasterr: %i)\n", GetLastError());
+		}
 
 		Sleep(OneMinute);
 	}
