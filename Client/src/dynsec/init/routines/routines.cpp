@@ -52,7 +52,7 @@ namespace Dynsec::Routines {
 		printf("%i microseconds to scan all memory pages for 1 signature\n", microseconds);
 
 		// Once a minute
-		Sleep(OneMinute);
+		Sleep(1min);
 	}
 
 	void ExploitableModuleScanRoutine(LPVOID lpParam) {
@@ -81,7 +81,7 @@ namespace Dynsec::Routines {
 		}
 
 		// Once every 5 minutes
-		Sleep(OneMinute * 5);
+		Sleep(5min);
 	}
 
 	void NTAPI ThreadLocalStorageCallback(PVOID DllHandle, DWORD dwReason, PVOID) {
@@ -185,7 +185,7 @@ namespace Dynsec::Routines {
 			printf("[REPORT] Window iteration failed (lasterr: %i)\n", GetLastError());
 		}
 
-		Sleep(OneMinute);
+		Sleep(1min);
 	}
 
 	extern "C" void __fastcall hook_routine(uintptr_t rcx /*return addr*/, uintptr_t rdx /*return result*/) {

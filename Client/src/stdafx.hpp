@@ -19,7 +19,23 @@
 #undef GetCurrentProcess
 #define GetCurrentProcess() (HANDLE)-1
 
-#define OneMinute 60000
+
+constexpr DWORD operator ""sec(unsigned long long s) {
+	return s * 1000;
+}
+
+constexpr DWORD operator ""sec(long double s) {
+	return s * 1000;
+}
+
+constexpr unsigned long long operator ""min(unsigned long long m) {
+	return m * 1000 * 60;
+}
+
+constexpr unsigned long long operator ""min(long double m) {
+	return m * 1000 * 60;
+}
+
 
 #ifdef _WIN64
 #define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
