@@ -76,14 +76,6 @@ namespace Utils::Secure {
 			return true;
 		};
 
-		auto SecureVirtualAlloc = [&](LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) -> LPVOID {
-			if (NtAllocateVirtualMemory(GetCurrentProcess(), &lpAddress, 0, &dwSize, flAllocationType, flProtect) >= 0) {
-				return lpAddress;
-			}
-
-			return nullptr;
-		};
-
 		char name[MAX_PATH];
 		if (GetModuleFileNameA(Utils::Secure::GetModuleHandle(L"ntdll.dll"), name, MAX_PATH)) {
 			FILE* fp;
@@ -115,11 +107,15 @@ namespace Utils::Secure {
 
 		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
-		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		// Allocate the syscall invoke memory
+		int BlockSize = ShellcodeSize + sizeof(CryptedAllocItem) - 1;
+		CryptedAllocItem* SyscallMemory = (CryptedAllocItem*)VirtualAlloc(0, BlockSize * m_Functions.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+		m_Functions[_NtAllocateVirtualMemory].first = &SyscallMemory[_NtAllocateVirtualMemory * BlockSize];
 		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
 		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
 
-		m_Functions[_NtQueryInformationProcess].first = (CryptedAllocItem*)VirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		m_Functions[_NtQueryInformationProcess].first = &SyscallMemory[_NtQueryInformationProcess * BlockSize];
 		if (!CheckAllocation(m_Functions[_NtQueryInformationProcess].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
 
@@ -129,7 +125,7 @@ namespace Utils::Secure {
 
 		// now that the above syscall is resolved, we can use the secure ptrs
 		for (auto& Element : m_Functions) {
-			Element.second.first = (CryptedAllocItem*)EncodePtr(SecureVirtualAlloc(0, ShellcodeSize + sizeof(CryptedAllocItem) - 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+			Element.second.first = (CryptedAllocItem*)EncodePtr(&SyscallMemory[Element.first * BlockSize]);
 			if (!CheckAllocation(Element.second.first)) return false;
 			SetupAllocation(Element.second, SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		}
