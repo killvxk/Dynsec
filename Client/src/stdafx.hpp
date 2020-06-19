@@ -1,6 +1,9 @@
 #ifndef PCH_H
 #define PCH_H
 
+#pragma warning(disable: 4244)
+#pragma warning(disable: 4455)
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <Windows.h>
 #include <string>
@@ -19,7 +22,6 @@
 #undef GetCurrentProcess
 #define GetCurrentProcess() (HANDLE)-1
 
-
 constexpr DWORD operator ""sec(unsigned long long s) {
 	return s * 1000;
 }
@@ -35,7 +37,6 @@ constexpr unsigned long long operator ""min(unsigned long long m) {
 constexpr unsigned long long operator ""min(long double m) {
 	return m * 1000 * 60;
 }
-
 
 #ifdef _WIN64
 #define ProcessEnvironmentBlock ((PEB*)__readgsqword(0x60))
