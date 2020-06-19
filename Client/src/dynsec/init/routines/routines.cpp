@@ -4,7 +4,9 @@
 #include "utils/scans/signature_scan.hpp"
 #include "utils/secure/virtual.hpp"
 #include "utils/secure/module.hpp"
+#include "utils/secure/syscall.hpp"
 #include "dynsec/crypto/crypto.hpp"
+#include "utils/secure/pointers.hpp"
 
 namespace Dynsec::Routines {
 	void MemoryScanRoutine(LPVOID lpParam) {
@@ -45,6 +47,31 @@ namespace Dynsec::Routines {
 					}
 				}
 			}
+
+			// Check for allocated executable pages outside of mapped modules
+			if ((Page.Type == MEM_PRIVATE || Page.Type == MEM_MAPPED) && ExecutableMemory) {
+				uint64_t PageAddress = (uint64_t)Page.BaseAddress;
+
+				// Check if the address is in any modules (thanks BE)
+				if ((PageAddress & 0xFF0000000000) != 0x7F0000000000
+					&& (PageAddress & 0xFFF000000000) != 0x7F000000000
+					&& (PageAddress & 0xFFFFF0000000) != 0x70000000
+					&& PageAddress != 0x3E0000) {
+					bool IsSyscallAllocation = false;
+					for (uint64_t SyscallAddress : Utils::Secure::GetSyscalls()->GetAllocatedAddresses()) {
+						uint64_t DecodedSyscallAddress = (uint64_t)DecodePtr((void*)SyscallAddress);
+						if (DecodedSyscallAddress == PageAddress) {
+							IsSyscallAllocation = true;
+							break;
+						}
+					}
+
+					if (!IsSyscallAllocation) {
+						// Report
+						printf("Executable memory outside of a mapped module at %llx\n", PageAddress);
+					}
+				}
+			}
 		}
 
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -62,6 +89,7 @@ namespace Dynsec::Routines {
 			if (Module) {
 				HMODULE ModuleHandle = (HMODULE)(Module->DllBase);
 				if (ModuleHandle != Utils::Secure::GetModuleHandle(0)) {
+					// Check for executable+writable sections
 					auto ModuleSections = Utils::Secure::GetModuleSections(ModuleHandle);
 					for (auto& Section : ModuleSections) {
 						if (Section) {

@@ -169,6 +169,16 @@ namespace Utils::Secure {
 		}
 	}
 
+	std::vector<uint64_t> Syscalls::GetAllocatedAddresses() {
+		std::vector<uint64_t> Addresses;
+
+		for (auto Element : m_Functions) {
+			Addresses.push_back((uint64_t)Element.second.first);
+		}
+
+		return Addresses;
+	}
+
 	NTSTATUS Syscalls::NtAllocateVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect) {
 		NTSTATUS Return = 0;
 

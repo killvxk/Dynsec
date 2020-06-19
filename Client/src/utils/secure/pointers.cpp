@@ -9,6 +9,8 @@ namespace Utils::Secure {
 			if (GetSyscalls()->NtQueryInformationProcess(GetCurrentProcess(), 0x24, &m_Cookie, 4, &ReturnLength) != 0) {
 				return nullptr;
 			}
+
+			printf("m_Cookie: %x\n", m_Cookie);
 		}
 
 		uint64_t Address = (uint64_t)Ptr;
@@ -26,8 +28,6 @@ namespace Utils::Secure {
 			if (GetSyscalls()->NtQueryInformationProcess(GetCurrentProcess(), 0x24, &m_Cookie, 4, &ReturnLength) != 0) {
 				return nullptr;
 			}
-
-			printf("m_Cookie: %x\n", m_Cookie);
 		}
 
 		uint64_t Address = (uint64_t)Ptr;
