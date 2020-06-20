@@ -3,6 +3,7 @@
 #include "module.hpp"
 #include "dynsec/crypto/crypto.hpp"
 #include "utils/secure/pointers.hpp"
+#include "virtual.hpp"
 
 namespace Utils::Secure {
 	void EncryptAllocation(Syscalls::CryptedAllocItem* Address) {
@@ -85,7 +86,7 @@ namespace Utils::Secure {
 				int size = ftell(fp);
 				fseek(fp, 0, SEEK_SET);
 
-				m_NtdllDisk = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
+				m_NtdllDisk = ::VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
 				if (m_NtdllDisk) {
 					fread(m_NtdllDisk, 1, size, fp);
 					fclose(fp);
@@ -105,11 +106,12 @@ namespace Utils::Secure {
 		m_Functions[_NtReadVirtualMemory].second = GetSyscallIndex("NtReadVirtualMemory", m_NtdllDisk);
 		m_Functions[_NtSetInformationThread].second = GetSyscallIndex("NtSetInformationThread", m_NtdllDisk);
 
-		if (m_NtdllDisk) VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
+		if (m_NtdllDisk) ::VirtualFree(m_NtdllDisk, 0, MEM_RELEASE);
 
 		// Allocate the syscall invoke memory
 		int BlockSize = ShellcodeSize + sizeof(CryptedAllocItem) - 1;
-		CryptedAllocItem* SyscallMemory = (CryptedAllocItem*)VirtualAlloc(0, BlockSize * m_Functions.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		CryptedAllocItem* SyscallMemory = (CryptedAllocItem*)::VirtualAlloc(0, BlockSize * m_Functions.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		printf("SyscallMemory: %llx\n", SyscallMemory);
 
 		m_Functions[_NtAllocateVirtualMemory].first = &SyscallMemory[_NtAllocateVirtualMemory * BlockSize];
 		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
@@ -160,9 +162,7 @@ namespace Utils::Secure {
 }
 
 	void Syscalls::Clean() {
-		for (auto& it : m_Functions) {
-			VirtualFree(it.second.first, 0, MEM_RELEASE);
-		}
+		::VirtualFree(DecodePtr(m_Functions[_NtAllocateVirtualMemory].first), 0, MEM_RELEASE);
 	}
 
 	std::vector<uint64_t> Syscalls::GetAllocatedAddresses() {

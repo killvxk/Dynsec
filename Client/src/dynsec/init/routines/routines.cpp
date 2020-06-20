@@ -131,7 +131,7 @@ namespace Dynsec::Routines {
 							return;
 						}
 
-						// Resolve LoadLibrary jumps
+						// TEMP: Resolve jumps
 						uint8_t JumpAsm[] = { 0x48, 0xFF, 0x25 };
 						if (!memcmp((void*)ThreadEntryPoint, JumpAsm, 3)) {
 							uint64_t JumpAddress = (uint64_t)(*(int*)(ThreadEntryPoint + 3) + ThreadEntryPoint + 7);

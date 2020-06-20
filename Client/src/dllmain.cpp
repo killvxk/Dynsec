@@ -1,6 +1,7 @@
 #include "stdafx.hpp"
 #include "dynsec/init/init.hpp"
 #include "utils/secure/syscall.hpp"
+#include "utils/secure/resolved.hpp"
 #include "utils/secure/virtual.hpp"
 #include "global/variables.hpp"
 #include "utils/utils.hpp"
@@ -18,6 +19,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 		if (!Utils::Secure::GetSyscalls()->Initialize()) {
 			printf("failed GetSyscalls()->Initialize\n");
+			return FALSE;
+		}
+
+		if (!Utils::Secure::GetResolved()->Initialize()) {
+			printf("failed GetResolved()->Initialize\n");
 			return FALSE;
 		}
 

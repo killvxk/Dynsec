@@ -2,6 +2,7 @@
 #include "syscall.hpp"
 #include "utils/caller.hpp"
 #include "utils/structs.hpp"
+#include "resolved.hpp"
 
 namespace Utils::Secure {
 	LPVOID VirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
@@ -20,10 +21,9 @@ namespace Utils::Secure {
 
 		NTSTATUS Status = GetSyscalls()->NtFreeVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, dwFreeType);
 		if (Status == 0xC0000045) {
-			// TODO:
-			/*if (!RtlFlushSecureMemoryCache(lpAddress, dwSize)) {
+			if (!GetResolved()->RtlFlushSecureMemoryCache(lpAddress, dwSize)) {
 				return FALSE;
-			}*/
+			}
 
 			Status = GetSyscalls()->NtFreeVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, dwFreeType);
 		}
@@ -41,9 +41,8 @@ namespace Utils::Secure {
 			return TRUE;
 		}
 
-		// TODO:
-		// && RtlFlushSecureMemoryCache(lpAddress, dwSize)
-		if (Status == 0xC0000045) {
+		if (Status == 0xC0000045
+			&& GetResolved()->RtlFlushSecureMemoryCache(lpAddress, dwSize)) {
 			Status = GetSyscalls()->NtProtectVirtualMemory(GetCurrentProcess(), &lpAddress, &dwSize, flNewProtect, lpflOldProtect);
 			if ((Status & 0x80000000) == 0) {
 				return TRUE;
