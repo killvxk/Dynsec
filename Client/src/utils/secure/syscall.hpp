@@ -13,7 +13,8 @@ namespace Utils::Secure {
 
 		bool Initialize();
 		void Clean();
-		std::vector<uint64_t> GetAllocatedAddresses();
+		std::vector<uint64_t> GetSyscallAddresses();
+		CryptedAllocItem* GetAllocatedPage();
 
 		NTSTATUS NtAllocateVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect);
 		NTSTATUS NtFreeVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG FreeType);
@@ -42,6 +43,7 @@ namespace Utils::Secure {
 		};
 
 		LPVOID m_NtdllDisk = nullptr;
+		CryptedAllocItem* m_AllocatedPage;
 		std::unordered_map<eFunctions, std::pair<CryptedAllocItem*, int>> m_Functions;
 		std::unordered_map<eFunctions, std::mutex> m_Mutexs;
 

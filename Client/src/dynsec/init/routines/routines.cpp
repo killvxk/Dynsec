@@ -8,6 +8,8 @@
 #include "dynsec/crypto/crypto.hpp"
 #include "utils/secure/pointers.hpp"
 
+#include "utils/va.hpp"
+
 namespace Dynsec::Routines {
 	void MemoryScanRoutine(LPVOID lpParam) {
 		auto MemoryPages = Utils::Secure::GetMemoryPages();
@@ -57,16 +59,7 @@ namespace Dynsec::Routines {
 					&& (PageAddress & 0xFFF000000000) != 0x7F000000000
 					&& (PageAddress & 0xFFFFF0000000) != 0x70000000
 					&& PageAddress != 0x3E0000) {
-					bool IsSyscallAllocation = false;
-					for (uint64_t SyscallAddress : Utils::Secure::GetSyscalls()->GetAllocatedAddresses()) {
-						uint64_t DecodedSyscallAddress = (uint64_t)DecodePtr((void*)SyscallAddress);
-						if (DecodedSyscallAddress == PageAddress) {
-							IsSyscallAllocation = true;
-							break;
-						}
-					}
-
-					if (!IsSyscallAllocation) {
+					if (PageAddress != (uint64_t)Utils::Secure::GetSyscalls()->GetAllocatedPage()) {
 						// Report
 						printf("Executable memory outside of a mapped module at %llx\n", PageAddress);
 					}
@@ -155,10 +148,24 @@ namespace Dynsec::Routines {
 	}
 
 	void WindowScanRoutine(LPVOID lpParam) {
-		// TODO: Reverse EnumWindows
-
 		std::vector<Dynsec::RoutineTypes::WindowInfo> Windows;
-		BOOL SuccessfullyEnumerated = EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+
+		// I guess this is more secure than calling EnumWindows
+		for (HWND hwnd = GetTopWindow(0); hwnd; hwnd = GetWindow(hwnd, GW_HWNDNEXT)) {
+			// Get window name
+			char WindowName[100];
+			int WindowNameLength = GetWindowTextA(hwnd, WindowName, 100);
+
+			LONG WindowStyle = GetWindowLong(hwnd, GWL_STYLE);
+			LONG WindowExtendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+
+			DWORD OwningProcessID = 0;
+			GetWindowThreadProcessId(hwnd, &OwningProcessID);
+
+			Windows.push_back({ WindowName, WindowStyle, WindowExtendedStyle, GetCurrentProcessId() == OwningProcessID });
+		}
+
+		/*BOOL SuccessfullyEnumerated = EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
 			// Get window name
 			char WindowName[100];
 			int WindowNameLength = GetWindowTextA(hwnd, WindowName, 100);
@@ -172,7 +179,7 @@ namespace Dynsec::Routines {
 			std::vector<Dynsec::RoutineTypes::WindowInfo>& pWindows = *reinterpret_cast<std::vector<Dynsec::RoutineTypes::WindowInfo>*>(lParam);
 			pWindows.push_back({ WindowName, WindowStyle, WindowExtendedStyle, GetCurrentProcessId() == OwningProcessID });
 			return TRUE;
-		}, (LPARAM)&Windows);
+		}, (LPARAM)&Windows);*/
 
 		std::vector<Dynsec::RoutineTypes::WindowInfo> ReportWindows;
 
@@ -208,8 +215,8 @@ namespace Dynsec::Routines {
 			printf("[REPORT] Reporting window -> %s\n", Window.m_Name.c_str());
 		}
 
-		if (!SuccessfullyEnumerated || Windows.size() < 1) {
-			// Report GetLastError
+		if (/*!SuccessfullyEnumerated || */Windows.size() < 1) {
+			// Report
 			printf("[REPORT] Window iteration failed (lasterr: %i)\n", GetLastError());
 		}
 

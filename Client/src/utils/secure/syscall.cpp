@@ -110,27 +110,21 @@ namespace Utils::Secure {
 
 		// Allocate the syscall invoke memory
 		int BlockSize = ShellcodeSize + sizeof(CryptedAllocItem) - 1;
-		CryptedAllocItem* SyscallMemory = (CryptedAllocItem*)::VirtualAlloc(0, BlockSize * m_Functions.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		printf("SyscallMemory: %llx\n", SyscallMemory);
+		m_AllocatedPage = (CryptedAllocItem*)::VirtualAlloc(0, BlockSize * m_Functions.size(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-		m_Functions[_NtAllocateVirtualMemory].first = &SyscallMemory[_NtAllocateVirtualMemory * BlockSize];
-		if (!CheckAllocation(m_Functions[_NtAllocateVirtualMemory].first)) return false;
-		SetupAllocation(m_Functions[_NtAllocateVirtualMemory], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
-
-		m_Functions[_NtQueryInformationProcess].first = &SyscallMemory[_NtQueryInformationProcess * BlockSize];
+		m_Functions[_NtQueryInformationProcess].first = &m_AllocatedPage[_NtQueryInformationProcess * BlockSize];
 		if (!CheckAllocation(m_Functions[_NtQueryInformationProcess].first)) return false;
 		SetupAllocation(m_Functions[_NtQueryInformationProcess], SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset, false);
 
-		// encrypt the two ptrs not encrypted
-		m_Functions[_NtQueryInformationProcess].first = (CryptedAllocItem*)EncodePtr(m_Functions[_NtQueryInformationProcess].first);
-		m_Functions[_NtAllocateVirtualMemory].first = (CryptedAllocItem*)EncodePtr(m_Functions[_NtAllocateVirtualMemory].first);
-
 		// now that the above syscall is resolved, we can use the secure ptrs
 		for (auto& Element : m_Functions) {
-			Element.second.first = (CryptedAllocItem*)EncodePtr(&SyscallMemory[Element.first * BlockSize]);
+			Element.second.first = (CryptedAllocItem*)EncodePtr(&m_AllocatedPage[Element.first * BlockSize]);
 			if (!CheckAllocation(Element.second.first)) return false;
 			SetupAllocation(Element.second, SyscallShellcode, ShellcodeSize, ShellcodeIndexOffset);
 		}
+
+		// encode the page pointer
+		m_AllocatedPage = (CryptedAllocItem*)EncodePtr(m_AllocatedPage);
 
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
@@ -162,10 +156,14 @@ namespace Utils::Secure {
 }
 
 	void Syscalls::Clean() {
-		::VirtualFree(DecodePtr(m_Functions[_NtAllocateVirtualMemory].first), 0, MEM_RELEASE);
+		if (m_Functions[_NtFreeVirtualMemory].first) {
+			VirtualFree(GetAllocatedPage(), 0, MEM_RELEASE);
+		} else {
+			::VirtualFree(GetAllocatedPage(), 0, MEM_RELEASE);
+		}
 	}
 
-	std::vector<uint64_t> Syscalls::GetAllocatedAddresses() {
+	std::vector<uint64_t> Syscalls::GetSyscallAddresses() {
 		std::vector<uint64_t> Addresses;
 
 		for (auto Element : m_Functions) {
@@ -173,6 +171,10 @@ namespace Utils::Secure {
 		}
 
 		return Addresses;
+	}
+
+	Syscalls::CryptedAllocItem* Syscalls::GetAllocatedPage() {
+		return (Syscalls::CryptedAllocItem*)DecodePtr(m_AllocatedPage);
 	}
 
 	NTSTATUS Syscalls::NtAllocateVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect) {
@@ -288,7 +290,6 @@ namespace Utils::Secure {
 
 		return Return;
 	}
-
 
 	NTSTATUS Syscalls::NtQueryInformationThread(HANDLE ThreadHandle, int ProcessInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength, PULONG ReturnLength) {
 		NTSTATUS Return = 0;

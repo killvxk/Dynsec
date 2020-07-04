@@ -9,7 +9,7 @@ namespace Utils::Secure {
 		BOOL RtlFlushSecureMemoryCache(PVOID MemoryCache, SIZE_T MemoryLength = 0);
 	private:
 		enum eFunctions {
-			_RtlFlushSecureMemoryCache
+			_RtlFlushSecureMemoryCache,
 		};
 
 		std::unordered_map<eFunctions, uint64_t> m_Functions;

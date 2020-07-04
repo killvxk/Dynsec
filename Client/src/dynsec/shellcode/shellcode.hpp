@@ -3,7 +3,9 @@
 
 namespace Dynsec::Shellcode {
 	struct ShellcodeContext {
-		// give access to winapi & dynsec functions
+		uint64_t m_Sleep;
+		uint64_t m_Malloc;
+		uint64_t m_Free;
 	};
 
 	void Execute(void* Shellcode);

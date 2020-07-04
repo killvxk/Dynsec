@@ -10,6 +10,9 @@ namespace Utils::Secure {
 		auto Ntdll = Utils::Secure::GetModuleHandle(L"ntdll.dll");
 		if (!Ntdll) return false;
 
+		auto Iphl = Utils::Secure::GetModuleHandle(L"iphlpapi.dll");
+		if (!Iphl) return false;
+
 		m_Functions[_RtlFlushSecureMemoryCache] = (uint64_t)Utils::Secure::GetProcAddress(Ntdll, "RtlFlushSecureMemoryCache");
 
 		for (auto& Functions : m_Functions) {
@@ -22,7 +25,7 @@ namespace Utils::Secure {
 
 	BOOL Resolved::RtlFlushSecureMemoryCache(PVOID MemoryCache, SIZE_T MemoryLength) {
 		std::unique_lock<std::mutex> l(m_Mutexs[_RtlFlushSecureMemoryCache]);
-		return Utils::Caller::Call<NTSTATUS>((uint64_t)DecodePtr((void*)m_Functions[_RtlFlushSecureMemoryCache]), MemoryCache, MemoryLength);
+		return Utils::Caller::Call<BOOL>((uint64_t)DecodePtr((void*)m_Functions[_RtlFlushSecureMemoryCache]), MemoryCache, MemoryLength);
 	}
 
 	Resolved* GetResolved() {
