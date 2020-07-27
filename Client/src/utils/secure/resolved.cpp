@@ -8,10 +8,10 @@ namespace Utils::Secure {
 		// TODO: Integrity check each resolve
 
 		auto Ntdll = Utils::Secure::GetModuleHandle(L"ntdll.dll");
-		if (!Ntdll) return false;
+		if (!Ntdll) { return false; }
 
 		auto Iphl = Utils::Secure::GetModuleHandle(L"iphlpapi.dll");
-		if (!Iphl) return false;
+		if (!Iphl) { return false; }
 
 		m_Functions[_RtlFlushSecureMemoryCache] = (uint64_t)Utils::Secure::GetProcAddress(Ntdll, "RtlFlushSecureMemoryCache");
 

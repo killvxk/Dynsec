@@ -58,10 +58,24 @@ namespace Utils::Secure {
 		// TODO: Syscall shellcode for each windows versions
 
 #ifdef _WIN64
-		// 4C 8B D1 B8 99 00 00 00 0F 05 C3
-		const char* SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
-		uint8_t ShellcodeIndexOffset = 4;
-		uint8_t ShellcodeSize = 11;
+		int BaseWindowsVersion = (int)ProcessEnvironmentBlock->LoaderLock; // Something is wrong with PEB struct, OSMajorVersion isn't 0x118
+
+		const char* SyscallShellcode = nullptr;
+		uint8_t ShellcodeIndexOffset = 0;
+		uint8_t ShellcodeSize = 0;
+
+		if (BaseWindowsVersion == 10) { // Windows 10
+			SyscallShellcode = "\x49\x89\xCA\xB8\x99\x00\x00\x00\x0F\x05\xC3";
+			ShellcodeIndexOffset = 4;
+			ShellcodeSize = 11;
+		} else if (BaseWindowsVersion == 6) { // Windows 7
+			SyscallShellcode = "\xB8\x00\x00\x00\x00\x33\xC9\x8D\x54\x24\x04\x64\xFF\x15\xC0\x00\x00\x00\x83\xC4\x04\xC2\x08\x00"; // NOT TESTED
+			ShellcodeIndexOffset = 1;
+			ShellcodeSize = 24;
+		} else {
+			printf("No supported windows version found for syscalls\n");
+			return false;
+		}
 #else
 		const char* SyscallShellcode = "\xB8\x99\x00\x00\x00\xCD\x2E\xC3";
 		uint8_t ShellcodeIndexOffset = 1;
@@ -142,9 +156,17 @@ namespace Utils::Secure {
 		if (FunctionAddress) {
 			uint64_t Address = (uint64_t)FunctionAddress;
 #ifdef _WIN64
-			if (*(uint8_t*)Address == 0x49 || *(uint8_t*)Address == 0x4C) {
-				return *(int*)(Address + 4);
-		}
+			int BaseWindowsVersion = (int)ProcessEnvironmentBlock->LoaderLock; // Something is wrong with PEB struct, OSMajorVersion isn't 0x118
+
+			if (BaseWindowsVersion == 10) {
+				if (*(uint8_t*)Address == 0x49 || *(uint8_t*)Address == 0x4C) {
+					return *(int*)(Address + 4);
+				}
+			} else if (BaseWindowsVersion == 6) {
+				if (*(uint8_t*)Address == 0xB8) {
+					return *(int*)(Address + 1);
+				}
+			}
 #else
 			if (*(uint8_t*)Address == 0xB8) {
 				return *(int*)(Address + 1);

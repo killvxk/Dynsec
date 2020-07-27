@@ -20,6 +20,7 @@ namespace Dynsec::Init {
 	}
 
 	void Initialize(LPVOID lpParam) {
+
 		// Initialize our hacky TLS Callback
 		GetTLSManager()->RegisterCallback(Global::Vars::g_ModuleHandle, Dynsec::Routines::ThreadLocalStorageCallback);
 

@@ -2,6 +2,8 @@
 
 namespace Utils::Secure {
 	HMODULE GetModuleHandle(const wchar_t* moduleName) {
+		LoadLibraryW(moduleName);
+
 		auto MappedModules = GetMappedModules();
 		for (auto Module : MappedModules) {
 			if (moduleName == nullptr) {
